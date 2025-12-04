@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -20,6 +20,8 @@ interface SidebarProps {
   toggleCollapsed: () => void;
   isMobileOpen: boolean;
   closeMobile: () => void;
+  width: number;
+  setWidth: (width: number) => void;
 }
 
 export function Sidebar({
@@ -28,11 +30,45 @@ export function Sidebar({
   isCollapsed,
   toggleCollapsed,
   isMobileOpen,
-  closeMobile
+  closeMobile,
+  width,
+  setWidth
 }: SidebarProps) {
   const { user } = useAuth();
+  const [isResizing, setIsResizing] = useState(false);
 
-  // Handle resizing to auto-close mobile menu if switching to desktop
+  // Handle resizing logic
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+
+      let newWidth = e.clientX;
+      if (newWidth < 200) newWidth = 200; // Min width
+      if (newWidth > 480) newWidth = 480; // Max width
+
+      setWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = "default";
+      document.body.style.userSelect = "auto";
+    };
+
+    if (isResizing) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none"; // Prevent text selection
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing, setWidth]);
+
+  // Handle auto-close mobile menu on resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -44,9 +80,8 @@ export function Sidebar({
   }, [closeMobile]);
 
   const sidebarClass = cn(
-    "fixed inset-y-0 left-0 z-40 flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out",
-    "hidden md:flex",
-    isCollapsed ? "w-16" : "w-64"
+    "fixed inset-y-0 left-0 z-40 flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out hidden md:flex",
+    isCollapsed && !isResizing ? "w-16" : ""
   );
 
   const mobileSidebarClass = cn(
@@ -140,8 +175,12 @@ export function Sidebar({
                 title={!expandedState ? user?.email || "" : undefined}
            >
                <div className="w-12 flex items-center justify-center shrink-0 h-full">
-                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-xs font-medium text-primary">{user?.email?.[0].toUpperCase()}</span>
+                   <div className="h-8 w-8 rounded-full bg-secondary overflow-hidden flex items-center justify-center shrink-0 border border-border">
+                      {user?.photoURL ? (
+                          <img src={user.photoURL} alt="Avatar" className="h-full w-full object-cover" />
+                      ) : (
+                          <span className="text-xs font-medium text-primary">{user?.email?.[0].toUpperCase()}</span>
+                      )}
                    </div>
                </div>
 
@@ -175,8 +214,19 @@ export function Sidebar({
       )}
 
       {/* Desktop Sidebar */}
-      <aside className={sidebarClass}>
+      <aside
+        className={sidebarClass}
+        style={{ width: (!isCollapsed && !isMobileOpen) ? width : undefined }}
+      >
         {content(false)}
+
+        {/* Resize Handle - Only visible on Desktop and when Expanded */}
+        {!isCollapsed && (
+            <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50 transition-colors z-50 select-none"
+                onMouseDown={(e) => { e.preventDefault(); setIsResizing(true); }}
+            />
+        )}
       </aside>
 
       {/* Mobile Sidebar */}
