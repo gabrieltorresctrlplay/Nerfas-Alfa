@@ -39,7 +39,7 @@ function PublicRoute({ children }: { children: React.ReactElement }) {
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router basename={import.meta.env.BASE_URL}>
         <Routes>
           <Route 
             path="/login" 
