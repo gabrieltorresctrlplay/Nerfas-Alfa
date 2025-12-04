@@ -5,7 +5,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/Nerfas-Alfa/',
+  base: '/',
   plugins: [
     react(),
     tailwindcss(),
@@ -16,6 +16,6 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'docs',
+    outDir: 'dist',
   },
 })
