@@ -12,5 +12,6 @@
         "destination": "/index.html"
       }
     ]
-  }
+  },
+  "// Note": "This comment is added to force a full CDN cache invalidation on deploy."
 }
