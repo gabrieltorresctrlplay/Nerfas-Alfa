@@ -14,8 +14,8 @@ import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 
 interface SidebarProps {
-  currentView: "home" | "settings";
-  setCurrentView: (view: "home" | "settings") => void;
+  currentView: "home" | "settings" | "profile";
+  setCurrentView: (view: "home" | "settings" | "profile") => void;
   isCollapsed: boolean;
   toggleCollapsed: () => void;
   isMobileOpen: boolean;
@@ -131,8 +131,12 @@ export function Sidebar({
         {/* Footer */}
         <div className="border-t border-sidebar-border p-2 shrink-0">
            <Button
-                variant="ghost"
-                className="w-full justify-start p-0 h-12 mb-1 hover:bg-sidebar-accent/50"
+                variant={currentView === 'profile' ? "secondary" : "ghost"}
+                className={cn(
+                    "w-full justify-start p-0 h-12 mb-1 hover:bg-sidebar-accent/50 relative overflow-hidden group",
+                    currentView === 'profile' && "bg-sidebar-accent before:absolute before:left-0 before:h-full before:w-1 before:bg-primary"
+                )}
+                onClick={() => { setCurrentView("profile"); if(isMobile) closeMobile(); }}
                 title={!expandedState ? user?.email || "" : undefined}
            >
                <div className="w-12 flex items-center justify-center shrink-0 h-full">
@@ -198,9 +202,10 @@ function NavItem({ icon, label, isActive, onClick, showExpanded, variant = "ghos
             variant={isActive ? "secondary" : variant}
             onClick={onClick}
             className={cn(
-                "w-full justify-start p-0 overflow-hidden relative group h-10",
-                isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" :
-                (variant === "ghost" ? "text-sidebar-foreground hover:bg-sidebar-accent/50" : "")
+                "w-full justify-start p-0 overflow-hidden relative group h-10 transition-all",
+                isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:left-0 before:h-full before:w-1 before:bg-primary font-medium"
+                    : (variant === "ghost" ? "text-sidebar-foreground hover:bg-sidebar-accent/50" : "")
             )}
             title={!showExpanded ? label : undefined}
         >

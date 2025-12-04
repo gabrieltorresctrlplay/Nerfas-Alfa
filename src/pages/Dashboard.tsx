@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { updateProfile } from "firebase/auth";
 
 export function Dashboard() {
-  const [currentView, setCurrentView] = useState<"home" | "settings">("home");
+  const [currentView, setCurrentView] = useState<"home" | "settings" | "profile">("home");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { user } = useAuth();
@@ -135,10 +135,10 @@ export function Dashboard() {
           </div>
         )}
 
-        {currentView === "settings" && (
-          <div className="max-w-3xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-foreground">Configurações e Perfil</h1>
+        {currentView === "profile" && (
+          <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold text-foreground">Meu Perfil</h1>
             </div>
 
             {/* Profile Section */}
@@ -146,7 +146,7 @@ export function Dashboard() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <UserIcon className="w-5 h-5 text-primary" />
-                        Perfil do Usuário
+                        Informações do Usuário
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -217,6 +217,14 @@ export function Dashboard() {
                     </div>
                 </CardContent>
             </Card>
+          </div>
+        )}
+
+        {currentView === "settings" && (
+          <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold text-foreground">Configurações do Sistema</h1>
+            </div>
 
             {/* Appearance Section */}
             <Card className="bg-card/80 backdrop-blur-sm shadow-md">
