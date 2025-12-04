@@ -1,40 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sidebar } from "@/components/Sidebar";
-import { Menu } from "lucide-react";
+import { Menu, Save, User as UserIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { updateProfile } from "firebase/auth";
 
 export function Dashboard() {
   const [currentView, setCurrentView] = useState<"home" | "settings">("home");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { user } = useAuth();
 
-  // Estados das Configurações
-  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-    const saved = localStorage.getItem("nerf_notif");
-    return saved === "true";
-  });
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [systemMessage, setSystemMessage] = useState(() => {
-    return localStorage.getItem("nerf_sys_msg") || "";
-  });
+  // Profile State
+  const [displayName, setDisplayName] = useState("");
+  const [photoURL, setPhotoURL] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Salvar mensagem
-  const handleSaveMessage = () => {
-    localStorage.setItem("nerf_sys_msg", systemMessage);
-    alert("Configuração salva localmente.");
-  };
+  useEffect(() => {
+    if (user) {
+      setDisplayName(user.displayName || "");
+      setPhotoURL(user.photoURL || "");
+    }
+  }, [user]);
 
-  // Toggle Notificações
-  const toggleNotifications = () => {
-    const newState = !notificationsEnabled;
-    setNotificationsEnabled(newState);
-    localStorage.setItem("nerf_notif", String(newState));
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      await updateProfile(user, {
+        displayName,
+        photoURL
+      });
+      alert("Perfil atualizado com sucesso!");
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao atualizar perfil.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -128,86 +136,103 @@ export function Dashboard() {
         )}
 
         {currentView === "settings" && (
-          <div className="max-w-2xl mx-auto">
-            <h1 className="text-2xl font-bold text-foreground mb-6">
-              Configurações do Sistema
-            </h1>
-            <Card className="rounded border border-border divide-y divide-border shadow-lg bg-card/80 backdrop-blur-sm">
-              {/* Toggle Notifications */}
-              <div className="p-6 flex items-center justify-between">
-                <div className="grid gap-1">
-                  <Label
-                    htmlFor="notifications-mode"
-                    className="font-medium text-foreground"
-                  >
-                    Notificações de Alerta
-                  </Label>
-                  <div className="text-sm text-muted-foreground">
-                    Receber alertas críticos por e-mail.
-                  </div>
-                </div>
-                <Switch
-                  id="notifications-mode"
-                  checked={notificationsEnabled}
-                  onCheckedChange={toggleNotifications}
-                />
-              </div>
+          <div className="max-w-3xl mx-auto space-y-6">
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold text-foreground">Configurações e Perfil</h1>
+            </div>
 
-              {/* Maintenance Mode */}
-              <div className="p-6 flex items-center justify-between">
-                <div className="grid gap-1">
-                  <Label
-                    htmlFor="maintenance-mode"
-                    className="font-medium text-foreground"
-                  >
-                    Modo de Manutenção
-                  </Label>
-                  <div className="text-sm text-muted-foreground">
-                    Suspende o acesso público temporariamente.
-                  </div>
-                </div>
-                <Switch
-                  id="maintenance-mode"
-                  checked={maintenanceMode}
-                  onCheckedChange={setMaintenanceMode}
-                />
-              </div>
+            {/* Profile Section */}
+            <Card className="bg-card/80 backdrop-blur-sm shadow-md">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <UserIcon className="w-5 h-5 text-primary" />
+                        Perfil do Usuário
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {/* Avatar Area */}
+                    <div className="flex items-center gap-6">
+                        <div className="relative group shrink-0">
+                            <div className="h-24 w-24 rounded-full bg-secondary overflow-hidden flex items-center justify-center border-2 border-border shadow-sm">
+                                {photoURL ? (
+                                    <img src={photoURL} alt="Avatar" className="h-full w-full object-cover" />
+                                ) : (
+                                    <span className="text-3xl font-medium text-secondary-foreground">{displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase()}</span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex-1 space-y-1">
+                            <h3 className="font-medium text-lg">{displayName || "Usuário sem nome"}</h3>
+                            <p className="text-sm text-muted-foreground">{user?.email}</p>
+                        </div>
+                    </div>
 
-              {/* System Message */}
-              <div className="p-6">
-                <Label className="font-medium text-foreground mb-2">
-                  Mensagem Global do Sistema
-                </Label>
-                <div className="text-sm text-muted-foreground mb-3">
-                  Esta mensagem será exibida no cabeçalho de todos os usuários.
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    value={systemMessage}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setSystemMessage(e.target.value)
-                    }
-                    placeholder="Ex: Manutenção programada às 22h"
-                  />
-                  <Button onClick={handleSaveMessage}>Salvar</Button>
-                </div>
-              </div>
+                    <div className="grid gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="displayName">Nome de Exibição</Label>
+                            <Input
+                                id="displayName"
+                                value={displayName}
+                                onChange={(e) => setDisplayName(e.target.value)}
+                                placeholder="Como você quer ser chamado?"
+                            />
+                        </div>
 
-              {/* Theme Toggle */}
-              <div className="p-6 flex items-center justify-between">
-                <div className="grid gap-1">
-                  <Label htmlFor="theme-mode" className="font-medium text-foreground">
-                    Tema da Interface
-                  </Label>
-                  <div className="text-sm text-muted-foreground">
-                    Selecione o tema de cor para o painel.
-                  </div>
-                </div>
-                <ThemeToggle />
-              </div>
-            </Card>{" "}
-            {/* Fechamento do Card */}
+                        <div className="grid gap-2">
+                            <Label htmlFor="photoURL">URL do Avatar</Label>
+                            <Input
+                                id="photoURL"
+                                value={photoURL}
+                                onChange={(e) => setPhotoURL(e.target.value)}
+                                placeholder="https://exemplo.com/sua-foto.jpg"
+                            />
+                            <p className="text-xs text-muted-foreground">Cole um link direto para sua imagem de perfil.</p>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="email">Email (Não editável)</Label>
+                            <Input
+                                id="email"
+                                value={user?.email || ""}
+                                disabled
+                                className="bg-muted opacity-50 cursor-not-allowed"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end pt-4">
+                        <Button onClick={handleUpdateProfile} disabled={isLoading} className="w-full sm:w-auto">
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Salvando...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Salvar Alterações
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Appearance Section */}
+            <Card className="bg-card/80 backdrop-blur-sm shadow-md">
+                 <CardHeader>
+                    <CardTitle className="text-lg">Aparência</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between">
+                        <div className="grid gap-1">
+                            <Label className="font-medium">Tema da Interface</Label>
+                            <div className="text-sm text-muted-foreground">Alternar entre modo claro e escuro.</div>
+                        </div>
+                        <ThemeToggle />
+                    </div>
+                </CardContent>
+            </Card>
           </div>
         )}
       </main>
