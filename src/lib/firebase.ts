@@ -13,6 +13,14 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
+// Verifica se as variáveis de ambiente essenciais estão presentes
+if (!firebaseConfig.projectId) {
+  console.error(
+    "Erro Crítico: Configuração do Firebase ausente ou incompleta. " +
+    "Verifique se as variáveis de ambiente VITE_FIREBASE_* estão definidas corretamente no momento do build."
+  );
+}
+
 // Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
 
