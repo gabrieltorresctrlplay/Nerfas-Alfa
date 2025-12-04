@@ -45,7 +45,6 @@ export function Sidebar({
 
   const sidebarClass = cn(
     "fixed inset-y-0 left-0 z-40 flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out",
-    // Desktop width logic: hidden on mobile (default), flex on md
     "hidden md:flex",
     isCollapsed ? "w-16" : "w-64"
   );
@@ -55,103 +54,111 @@ export function Sidebar({
     isMobileOpen ? "translate-x-0" : "-translate-x-full"
   );
 
-  const content = (isMobile: boolean) => (
-    <>
-      {/* Header */}
-      <div className={cn("flex items-center h-16 border-b border-sidebar-border", isCollapsed && !isMobile ? "justify-center px-0" : "justify-between px-4")}>
-        <div className={cn("flex items-center font-semibold text-sidebar-foreground", isCollapsed && !isMobile ? "hidden" : "flex")}>
-             <Zap className="w-6 h-6 mr-2 text-primary fill-current" />
-             <span className="truncate">Alfa Nerf</span>
-             <span className="ml-2 text-[10px] bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-full">v1.0</span>
+  const showExpanded = !isCollapsed;
+
+  const content = (isMobile: boolean) => {
+    // On mobile, sidebar is always "expanded" visually inside the drawer
+    const expandedState = isMobile ? true : showExpanded;
+
+    return (
+      <>
+        {/* Header */}
+        <div className="flex items-center h-16 border-b border-sidebar-border relative overflow-hidden shrink-0">
+          {/* Zone 1: The 'Icon' area (64px) */}
+          <div className="w-16 h-full flex items-center justify-center shrink-0 z-20 relative">
+               {/* Logo Icon - Visible when Expanded */}
+               <div className={cn("absolute transition-all duration-300 flex items-center justify-center", expandedState ? "opacity-100 scale-100" : "opacity-0 scale-50")}>
+                  <Zap className="w-6 h-6 text-primary fill-current" />
+               </div>
+
+               {/* Toggle Button - Visible when Collapsed (Desktop only) replacing Logo */}
+               {!isMobile && (
+                   <div className={cn("absolute transition-all duration-300 flex items-center justify-center", !expandedState ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 rotate-180")}>
+                       <Button variant="ghost" size="icon" onClick={toggleCollapsed} className="h-8 w-8" aria-label="Expandir sidebar">
+                          <ChevronRight className="w-4 h-4" />
+                       </Button>
+                   </div>
+               )}
+          </div>
+
+          {/* Zone 2: Text/Title area */}
+          <div className={cn("flex-1 flex items-center overflow-hidden transition-all duration-300 ease-in-out", expandedState ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4")}>
+               <span className="font-semibold text-sidebar-foreground truncate">Alfa Nerf</span>
+               <span className="ml-2 text-[10px] bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-full shrink-0">v1.0</span>
+          </div>
+
+          {/* Zone 3: Toggle Button (Expanded mode) - Pushed to right */}
+          {!isMobile && expandedState && (
+              <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleCollapsed}
+              className="mr-2 shrink-0 animate-in fade-in zoom-in duration-300"
+              aria-label="Colapsar sidebar"
+              >
+              <ChevronLeft className="w-4 h-4" />
+              </Button>
+          )}
+
+          {/* Mobile Close Button */}
+          {isMobile && (
+              <Button variant="ghost" size="icon" onClick={closeMobile} className="mr-2 shrink-0">
+                  <ChevronLeft className="w-4 h-4" />
+              </Button>
+          )}
         </div>
 
-        {/* Icon only when collapsed desktop */}
-        {isCollapsed && !isMobile && (
-             <Zap className="w-6 h-6 text-primary fill-current" />
-        )}
+        {/* Navigation */}
+        <div className="flex-1 overflow-y-auto py-4">
+          <nav className="space-y-1 px-2">
+              <NavItem
+                  icon={<Home className="w-5 h-5" />}
+                  label="Visão Geral"
+                  isActive={currentView === "home"}
+                  onClick={() => { setCurrentView("home"); if(isMobile) closeMobile(); }}
+                  showExpanded={expandedState}
+              />
+               <NavItem
+                  icon={<Settings className="w-5 h-5" />}
+                  label="Configurações"
+                  isActive={currentView === "settings"}
+                  onClick={() => { setCurrentView("settings"); if(isMobile) closeMobile(); }}
+                  showExpanded={expandedState}
+              />
+          </nav>
+        </div>
 
-        {/* Desktop Toggle Button (Only visible when expanded) */}
-        {!isMobile && !isCollapsed && (
-            <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleCollapsed}
-            className="hidden md:flex h-8 w-8"
-            aria-label="Colapsar sidebar"
-            >
-            <ChevronLeft className="w-4 h-4" />
-            </Button>
-        )}
+        {/* Footer */}
+        <div className="border-t border-sidebar-border p-2 shrink-0">
+           <Button
+                variant="ghost"
+                className="w-full justify-start p-0 h-12 mb-1 hover:bg-sidebar-accent/50"
+                title={!expandedState ? user?.email || "" : undefined}
+           >
+               <div className="w-12 flex items-center justify-center shrink-0 h-full">
+                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-xs font-medium text-primary">{user?.email?.[0].toUpperCase()}</span>
+                   </div>
+               </div>
 
-        {/* Mobile Close Button */}
-        {isMobile && (
-            <Button variant="ghost" size="icon" onClick={closeMobile} className="h-8 w-8">
-                <ChevronLeft className="w-4 h-4" />
-            </Button>
-        )}
-      </div>
+               <div className={cn("flex-1 text-left overflow-hidden transition-all duration-300", expandedState ? "w-auto opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-2")}>
+                  <div className="text-sm font-medium text-sidebar-foreground truncate max-w-[140px]">{user?.email}</div>
+                  <div className="text-xs text-muted-foreground">Usuário</div>
+               </div>
+           </Button>
 
-      {/* Toggle Button for Collapsed State (Desktop) */}
-      {!isMobile && isCollapsed && (
-         <div className="flex justify-center py-2 border-b border-sidebar-border">
-            <Button variant="ghost" size="icon" onClick={toggleCollapsed} className="h-8 w-8" aria-label="Expandir sidebar">
-                <ChevronRight className="w-4 h-4" />
-            </Button>
-         </div>
-      )}
-
-      {/* Navigation */}
-      <div className="flex-1 overflow-y-auto py-4">
-        <nav className="space-y-1 px-2">
-            <NavItem
-                icon={<Home className="w-5 h-5" />}
-                label="Visão Geral"
-                isActive={currentView === "home"}
-                onClick={() => { setCurrentView("home"); if(isMobile) closeMobile(); }}
-                isCollapsed={isCollapsed && !isMobile}
-            />
-             <NavItem
-                icon={<Settings className="w-5 h-5" />}
-                label="Configurações"
-                isActive={currentView === "settings"}
-                onClick={() => { setCurrentView("settings"); if(isMobile) closeMobile(); }}
-                isCollapsed={isCollapsed && !isMobile}
-            />
-        </nav>
-      </div>
-
-      {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
-        {!isCollapsed || isMobile ? (
-             <div className="mb-4 flex items-center gap-3 overflow-hidden">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-xs font-medium text-primary">{user?.email?.[0].toUpperCase()}</span>
-                </div>
-                <div className="flex-1 truncate min-w-0">
-                    <div className="text-sm font-medium text-sidebar-foreground truncate" title={user?.email || ""}>{user?.email}</div>
-                    <div className="text-xs text-muted-foreground">Usuário</div>
-                </div>
-             </div>
-        ) : (
-             <div className="mb-4 flex justify-center">
-                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0" title={user?.email || ""}>
-                     <span className="text-xs font-medium text-primary">{user?.email?.[0].toUpperCase()}</span>
-                 </div>
-             </div>
-        )}
-
-        <Button
-            variant="destructive"
-            className={cn("w-full justify-start overflow-hidden", (isCollapsed && !isMobile) ? "justify-center px-0" : "")}
-            onClick={() => signOut(auth)}
-            title="Encerrar Sessão"
-        >
-            <LogOut className={cn("w-4 h-4 shrink-0", (!isCollapsed || isMobile) ? "mr-2" : "")} />
-            {(!isCollapsed || isMobile) && <span className="truncate">Encerrar Sessão</span>}
-        </Button>
-      </div>
-    </>
-  );
+           <NavItem
+              icon={<LogOut className="w-4 h-4" />}
+              label="Encerrar Sessão"
+              isActive={false}
+              onClick={() => signOut(auth)}
+              showExpanded={expandedState}
+              variant="destructive"
+           />
+        </div>
+      </>
+    );
+  };
 
   return (
     <>
@@ -181,23 +188,34 @@ interface NavItemProps {
     label: string;
     isActive: boolean;
     onClick: () => void;
-    isCollapsed: boolean;
+    showExpanded: boolean;
+    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
 }
 
-function NavItem({ icon, label, isActive, onClick, isCollapsed }: NavItemProps) {
+function NavItem({ icon, label, isActive, onClick, showExpanded, variant = "ghost" }: NavItemProps) {
     return (
         <Button
-            variant={isActive ? "secondary" : "ghost"}
+            variant={isActive ? "secondary" : variant}
             onClick={onClick}
             className={cn(
-                "w-full justify-start overflow-hidden",
-                isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50",
-                isCollapsed ? "justify-center px-0" : "px-4"
+                "w-full justify-start p-0 overflow-hidden relative group h-10",
+                isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" :
+                (variant === "ghost" ? "text-sidebar-foreground hover:bg-sidebar-accent/50" : "")
             )}
-            title={isCollapsed ? label : undefined}
+            title={!showExpanded ? label : undefined}
         >
-            <span className="shrink-0">{icon}</span>
-            {!isCollapsed && <span className="ml-2 truncate">{label}</span>}
+            {/* Icon Container - Centered in the first 48px (which matches the collapsed button width) */}
+            <div className="w-12 flex items-center justify-center shrink-0 h-full">
+                {icon}
+            </div>
+
+            {/* Label Container */}
+            <span className={cn(
+                "truncate transition-all duration-300 ease-in-out whitespace-nowrap",
+                showExpanded ? "opacity-100 translate-x-0 max-w-[150px]" : "opacity-0 -translate-x-2 max-w-0"
+            )}>
+                {label}
+            </span>
         </Button>
     )
 }
