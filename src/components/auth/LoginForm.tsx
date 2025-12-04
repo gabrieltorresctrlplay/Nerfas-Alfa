@@ -42,7 +42,7 @@ export function LoginForm({ onSwitchToRegister, onGoogleLogin, onLogin, onForgot
           <Label htmlFor="email">Email ou Usuário</Label>
           <Input
             id="email"
-            type="email"
+            type="text"
             placeholder="admin@alfanerf.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
