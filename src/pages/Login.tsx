@@ -60,6 +60,10 @@ export function Login() {
   // HANDLERS
 
   const handleLogin = async (identifier: string, password: string, remember: boolean) => {
+    if (!identifier || !password) {
+        setError('Preencha todos os campos.');
+        return;
+    }
     setError('');
     setLoading(true);
     try {
@@ -89,6 +93,10 @@ export function Login() {
   };
 
   const handleRegister = async (data: any) => {
+    if (!data.username || !data.email || !data.password || !data.phone || !data.dob) {
+        setError('Preencha todos os campos obrigatórios.');
+        return;
+    }
     setError('');
     setLoading(true);
     try {
@@ -149,18 +157,18 @@ export function Login() {
 
   const handleOnboardingSubmit = async (data: any) => {
     if (!googleUser) return;
+    if (!data.username || !data.phone || !data.dob) {
+        setError('Preencha todos os campos obrigatórios.');
+        return;
+    }
     setError('');
     setLoading(true);
     try {
       await saveUserProfile(googleUser.uid, {
         ...data,
         email: googleUser.email,
-        displayName: googleUser.displayName // Use google name or allow override? data has username logic.
-        // We save username from form as 'username'. DisplayName can stay as Google's or update.
+        displayName: googleUser.displayName
       });
-
-      // Optional: Update auth profile with chosen username if desired
-      // await updateProfile(auth.currentUser!, { displayName: data.username });
 
       navigate('/');
     } catch (err) {
@@ -172,6 +180,10 @@ export function Login() {
   };
 
   const handleForgotPassword = async (email: string) => {
+    if (!email) {
+        setError('Digite seu email.');
+        return;
+    }
     setError('');
     setMessage(null);
     setLoading(true);

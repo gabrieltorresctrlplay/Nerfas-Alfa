@@ -199,3 +199,28 @@ body {
     letter-spacing: var(--tracking-normal);
   }
 }
+/* Custom Calendar Picker */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0);
+    cursor: pointer;
+}
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--muted-foreground);
+  border-radius: 4px;
+  opacity: 0.5;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary);
+}
