@@ -14,6 +14,7 @@ interface RegisterFormProps {
 
 export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loading, error }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -34,12 +35,25 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
     setFormData({ ...formData, phone: formatted });
   };
 
+  const validateEmail = (email: string) => {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setLocalError(null);
+
     if (formData.password !== formData.confirmPassword) {
-      alert("As senhas não coincidem!");
+      setLocalError("As senhas não coincidem!");
       return;
     }
+
+    if (!validateEmail(formData.email)) {
+        setLocalError("Por favor, insira um email válido (ex: nome@dominio.com)");
+        return;
+    }
+
     onRegister(formData);
   };
 
@@ -50,9 +64,9 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
         <p className="text-muted-foreground text-sm">Junte-se ao Alfa Nerf</p>
       </div>
 
-      {error && (
+      {(error || localError) && (
         <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive-foreground text-sm text-center">
-          {error}
+          {localError || error}
         </div>
       )}
 
@@ -76,7 +90,10 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => {
+                        setFormData({...formData, email: e.target.value});
+                        if (localError) setLocalError(null);
+                    }}
                     placeholder="voce@exemplo.com"
                     required
                     className="bg-background/50"
