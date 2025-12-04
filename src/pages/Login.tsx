@@ -1,111 +1,236 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  updateProfile,
+  sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence
+} from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+
+import { AuthLayout } from '@/components/auth/AuthLayout';
+import { LoginForm } from '@/components/auth/LoginForm';
+import { RegisterForm } from '@/components/auth/RegisterForm';
+import { OnboardingForm } from '@/components/auth/OnboardingForm';
+import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
+
+type AuthView = 'login' | 'register' | 'forgot' | 'onboarding';
 
 export function Login() {
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [view, setView] = useState<AuthView>('login');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
+  const [googleUser, setGoogleUser] = useState<any>(null);
+
   const navigate = useNavigate();
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // Helper: Save user profile to Firestore
+  const saveUserProfile = async (uid: string, data: any) => {
+    await setDoc(doc(db, "users", uid), {
+      username: data.username,
+      email: data.email,
+      phone: data.phone,
+      dob: data.dob,
+      referralCode: data.referralCode || "",
+      createdAt: new Date().toISOString(),
+      role: 'user' // default role
+    });
+  };
+
+  // Helper: Resolve email from username if needed
+  const resolveEmail = async (identifier: string): Promise<string | null> => {
+    if (identifier.includes('@')) return identifier;
+
+    // It's a username, query firestore
+    const q = query(collection(db, "users"), where("username", "==", identifier));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      return querySnapshot.docs[0].data().email;
+    }
+    return null;
+  };
+
+  // HANDLERS
+
+  const handleLogin = async (identifier: string, password: string, remember: boolean) => {
     setError('');
     setLoading(true);
-
     try {
-      if (isRegistering) {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
+      // Set persistence
+      await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+
+      // Resolve username to email if necessary
+      const email = await resolveEmail(identifier);
+      if (!email) {
+        throw new Error("Usuário não encontrado ou identificador inválido.");
       }
+
+      await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
-    } catch (err) {
-      const firebaseError = err as { code?: string };
-      if (firebaseError.code === 'auth/invalid-credential') {
-        setError('Email ou senha incorretos.');
-      } else if (firebaseError.code === 'auth/email-already-in-use') {
-        setError('Este email já está em uso.');
-      } else if (firebaseError.code === 'auth/weak-password') {
-        setError('A senha deve ter pelo menos 6 caracteres.');
+    } catch (err: any) {
+      console.error(err);
+      if (err.message === "Usuário não encontrado ou identificador inválido.") {
+        setError(err.message);
+      } else if (err.code === 'auth/invalid-credential') {
+        setError('Usuário/Email ou senha incorretos.');
       } else {
-        setError('Ocorreu um erro ao tentar entrar.');
-        console.error(err);
+        setError('Falha ao entrar. Verifique suas credenciais.');
       }
     } finally {
       setLoading(false);
     }
-  }
+  };
 
+  const handleRegister = async (data: any) => {
+    setError('');
+    setLoading(true);
+    try {
+      // 1. Create Auth User
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
+
+      // 2. Update Display Name
+      await updateProfile(user, {
+        displayName: data.username
+      });
+
+      // 3. Create Firestore Profile
+      await saveUserProfile(user.uid, data);
+
+      navigate('/');
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Este email já está sendo usado.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('A senha é muito fraca (mínimo 6 caracteres).');
+      } else {
+        setError('Erro ao criar conta. Tente novamente.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Check if user profile exists
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        // Already has profile
+        navigate('/');
+      } else {
+        // Needs onboarding
+        setGoogleUser(user);
+        setView('onboarding');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError('Erro ao conectar com Google.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOnboardingSubmit = async (data: any) => {
+    if (!googleUser) return;
+    setError('');
+    setLoading(true);
+    try {
+      await saveUserProfile(googleUser.uid, {
+        ...data,
+        email: googleUser.email,
+        displayName: googleUser.displayName // Use google name or allow override? data has username logic.
+        // We save username from form as 'username'. DisplayName can stay as Google's or update.
+      });
+
+      // Optional: Update auth profile with chosen username if desired
+      // await updateProfile(auth.currentUser!, { displayName: data.username });
+
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+      setError('Erro ao salvar perfil.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (email: string) => {
+    setError('');
+    setMessage(null);
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setMessage('Link de redefinição enviado para o seu email!');
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/user-not-found') {
+        setError('Email não encontrado.');
+      } else {
+        setError('Erro ao enviar email.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Render Logic
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4 overflow-hidden relative">
-      {/* Background Effects */}
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[120px]" />
+    <AuthLayout>
+      {view === 'login' && (
+        <LoginForm
+          onLogin={handleLogin}
+          onGoogleLogin={handleGoogleLogin}
+          onSwitchToRegister={() => setView('register')}
+          onForgotPassword={() => setView('forgot')}
+          loading={loading}
+          error={error}
+        />
+      )}
 
-      <div className="w-full max-w-md bg-card/50 backdrop-blur-xl border border-border p-8 rounded-2xl shadow-2xl relative z-10">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            {isRegistering ? 'Nova Conta' : 'Alfa Nerf'}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {isRegistering ? 'Registro de acesso ao sistema' : 'Painel Administrativo'}
-          </p>
-        </div>
+      {view === 'register' && (
+        <RegisterForm
+          onRegister={handleRegister}
+          onGoogleLogin={handleGoogleLogin}
+          onSwitchToLogin={() => setView('login')}
+          loading={loading}
+          error={error}
+        />
+      )}
 
-        {error && (
-          <div className="mb-6 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive-foreground text-sm text-center">
-            {error}
-          </div>
-        )}
+      {view === 'onboarding' && (
+        <OnboardingForm
+          onSubmit={handleOnboardingSubmit}
+          loading={loading}
+          email={googleUser?.email}
+        />
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1.5">Email</label>
-            <Input
-              type="email"
-              required
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-              placeholder="admin@alfanerf.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1.5">Senha</label>
-            <Input
-              type="password"
-              required
-              value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-2"
-          >
-            {loading ? 'Processando...' : (isRegistering ? 'Registrar' : 'Acessar Painel')}
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <Button
-            variant="link"
-            onClick={() => setIsRegistering(!isRegistering)}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-0 h-auto"
-          >
-            {isRegistering ? 'Voltar para login' : 'Solicitar acesso'}
-          </Button>
-        </div>
-      </div>
-    </div>
+      {view === 'forgot' && (
+        <ForgotPasswordForm
+          onSubmit={handleForgotPassword}
+          onBack={() => { setView('login'); setMessage(null); setError(''); }}
+          loading={loading}
+          message={message}
+          error={error}
+        />
+      )}
+    </AuthLayout>
   );
 }
