@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run build:all",
-    "build:docs": "tsc -b && vite build --base=/Nerfas-Alfa/ --outDir=docs && cp docs/index.html docs/404.html",
+    "build:docs": "tsc -b && vite build --base=/Nerfas-Alfa/ --outDir=docs && shx cp docs/index.html docs/404.html",
     "build:firebase": "tsc -b && vite build --base=/ --outDir=dist",
     "build:all": "npm run build:docs && npm run build:firebase",
     "lint": "eslint .",
@@ -46,6 +46,7 @@
     "firebase-tools": "^14.26.0",
     "globals": "^16.5.0",
     "jsdom": "^27.2.0",
+    "shx": "^0.4.0",
     "tailwindcss": "^4.1.17",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
