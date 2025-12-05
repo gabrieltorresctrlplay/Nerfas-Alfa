@@ -12,7 +12,7 @@ interface DateSelectProps {
   className?: string
 }
 
-export function DateSelect({ value, onChange, placeholder = "Selecione a data", disabled, className }: DateSelectProps) {
+export function DateSelect({ value, onChange, disabled, className }: DateSelectProps) {
   const [day, setDay] = React.useState<string>("")
   const [month, setMonth] = React.useState<string>("")
   const [year, setYear] = React.useState<string>("")

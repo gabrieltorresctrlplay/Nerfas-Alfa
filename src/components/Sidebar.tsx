@@ -296,11 +296,7 @@ function ProfileDropdown({
     return <Laptop className="h-4 w-4" />;
   };
 
-  const getThemeLabel = () => {
-    if (theme === "light") return "Claro";
-    if (theme === "dark") return "Escuro";
-    return "Sistema";
-  };
+
 
   // When collapsed, show only avatar with dropdown
   if (isCollapsed && !isMobile) {

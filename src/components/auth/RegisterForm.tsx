@@ -136,7 +136,7 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-500 relative">
       <Button
-        variant=""
+        variant="ghost"
         size="icon"
         onClick={onSwitchToLogin}
         aria-label="Voltar ao login"

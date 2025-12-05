@@ -1,7 +1,7 @@
 import React, { useState, useRef, type ReactNode } from "react";
 import { Bug, Moon, Sun, Laptop } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeProvider";
-import { Button } from "@/components/ui/button";
+
 
 function CompactThemeToggle() {
   const { setTheme, theme } = useTheme();
