@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Save, User as UserIcon, Loader2, Image as ImageIcon, Mail, Phone } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateProfile } from "firebase/auth";
-import { DatePicker } from "@/components/ui/date-picker"; // Import DatePicker
+import { DateSelect } from "@/components/ui/date-select";
+import { toast } from "sonner";
 
 export function DashboardProfileView() {
   const { user } = useAuth();
@@ -16,7 +17,7 @@ export function DashboardProfileView() {
   const [photoURL, setPhotoURL] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [dob, setDob] = useState<Date | undefined>(undefined); // Change dob to Date | undefined
+  const [dob, setDob] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -27,9 +28,7 @@ export function DashboardProfileView() {
       // For phone and dob, you would typically fetch these from Firestore if they were stored there.
       // For now, they remain empty or can be pre-filled with dummy data.
       // Assuming dob from user is a string in YYYY-MM-DD format
-      if (user.metadata?.creationTime) { // Example: using creationTime as a proxy if dob is not available
-        setDob(new Date(user.metadata.creationTime));
-      }
+      // You should fetch this from Firestore in a real implementation
     }
   }, [user]);
 
@@ -41,10 +40,14 @@ export function DashboardProfileView() {
         displayName,
         photoURL
       });
-      alert("Perfil atualizado com sucesso!");
+      toast.success("Perfil atualizado com sucesso!", {
+        description: "Suas alterações foram salvas.",
+      });
     } catch (error) {
       console.error(error);
-      alert("Erro ao atualizar perfil.");
+      toast.error("Erro ao atualizar perfil", {
+        description: "Tente novamente mais tarde.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -159,10 +162,9 @@ export function DashboardProfileView() {
                 <Label htmlFor="dob" className="flex items-center gap-2">
                     Data de Nascimento
                 </Label>
-                <DatePicker // Use the new DatePicker component
-                  date={dob}
-                  setDate={setDob}
-                  placeholder="Selecione sua data"
+                <DateSelect
+                  value={dob}
+                  onChange={(value) => setDob(value)}
                   disabled={isLoading}
                 />
               </div>

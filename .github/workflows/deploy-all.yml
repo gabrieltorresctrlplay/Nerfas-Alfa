@@ -22,7 +22,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       # --- 1. GitHub Pages Deployment (Build & Commit /docs) ---
       - name: Build for GitHub Pages
