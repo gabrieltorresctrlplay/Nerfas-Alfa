@@ -74,4 +74,16 @@ export default {
     },
   },
   plugins: [tailwindcssAnimate], // Usando a importação ES Module
+  safelist: [
+    // react-day-picker classes for calendar styling
+    "rdp-button",
+    "rdp-day_selected",
+    "rdp-day_today",
+    "rdp-day_range_start",
+    "rdp-day_range_end",
+    "rdp-day_range_middle",
+    "rdp-day_disabled",
+    "rdp-day_outside",
+    "rdp-day_hidden",
+  ]
 };

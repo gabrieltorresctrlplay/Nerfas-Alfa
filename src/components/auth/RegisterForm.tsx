@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker"; // Import DatePicker
 
 export interface RegisterFormData {
   username: string;
@@ -10,7 +11,7 @@ export interface RegisterFormData {
   password?: string;
   confirmPassword?: string;
   phone: string;
-  dob: string;
+  dob: string; // Change dob type to string
   referralCode: string;
 }
 
@@ -26,13 +27,13 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<RegisterFormData>({
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
     phone: "",
-    dob: "",
+    dob: "", // Initialize dob as empty string
     referralCode: ""
   });
 
@@ -64,7 +65,7 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
         return;
     }
 
-    onRegister(formData);
+    onRegister(formData); // dob is already string
   };
 
   return (
@@ -89,7 +90,6 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
                     id="username"
                     value={formData.username}
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
-                    placeholder="usuario123"
                     required
                     className="bg-background/50"
                 />
@@ -104,7 +104,6 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
                         setFormData({...formData, email: e.target.value});
                         if (localError) setLocalError(null);
                     }}
-                    placeholder="voce@exemplo.com"
                     required
                     className="bg-background/50"
                 />
@@ -118,20 +117,18 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
                     id="phone"
                     value={formData.phone}
                     onChange={handlePhoneChange}
-                    placeholder="(37) 9 8888-8888"
+                    placeholder="(XX) XXXXX-XXXX"
                     required
                     className="bg-background/50"
                 />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="dob">Data de Nascimento</Label>
-                <Input
-                    id="dob"
-                    type="date"
-                    value={formData.dob}
-                    onChange={(e) => setFormData({...formData, dob: e.target.value})}
-                    required
-                    className="bg-background/50"
+                <DatePicker
+                  date={formData.dob ? new Date(formData.dob) : undefined} // Convert string to Date for DatePicker
+                  setDate={(date) => setFormData({...formData, dob: date ? date.toISOString().split('T')[0] : ""})} // Convert Date to string
+                  placeholder="Selecione sua data"
+                  disabled={loading}
                 />
             </div>
         </div>
@@ -142,7 +139,7 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
                 id="referral"
                 value={formData.referralCode}
                 onChange={(e) => setFormData({...formData, referralCode: e.target.value})}
-                placeholder="Tem um convite?"
+                placeholder="Opcional: código de referência"
                 className="bg-background/50"
             />
         </div>
@@ -195,8 +192,13 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
         </div>
       </div>
 
-      <Button variant="outline" type="button" className="w-full" onClick={onGoogleLogin} disabled={loading}>
-        <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg>
+      <Button type="button" className="w-full bg-white text-gray-800 hover:bg-gray-100 dark:bg-white dark:text-gray-800 dark:hover:bg-gray-100 shadow-md text-base py-2 flex items-center justify-center" onClick={onGoogleLogin} disabled={loading}>
+        <svg className="mr-2 h-5 w-5" aria-hidden="true" focusable="false" viewBox="0 0 24 24" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#4285F4" d="M22.56 12.25c0-.61-.06-1.22-.16-1.83H12v3.66h6.15c-.25 1.29-.93 2.39-1.99 3.16v2.33h3c1.76-1.63 2.76-3.88 2.76-6.32z"></path>
+            <path fill="#34A853" d="M12 23c3.08 0 5.66-1.02 7.55-2.77l-3-2.33c-1.06.69-2.45 1.1-4.55 1.1-3.5 0-6.49-2.39-7.55-5.62H1.45v2.41C3.34 20.89 7.42 23 12 23z"></path>
+            <path fill="#FBBC04" d="M4.45 14.5c-.1-.32-.16-.65-.16-.99s.06-.67.16-1c0-3.23 2.39-5.91 5.55-6.84V1.75C6.73 2.92 3.34 7.03 3.34 12c0 .99.16 1.95.45 2.8z"></path>
+            <path fill="#EA4335" d="M12 4.18c1.69 0 3.24.58 4.45 1.76L20.65 2.4C18.49.92 15.34 0 12 0 7.42 0 3.34 2.11 1.45 5.09l3 2.41C5.51 5.92 8.5 3.53 12 3.53v.65z"></path>
+        </svg>
         Entrar com Google
       </Button>
 
