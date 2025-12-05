@@ -393,11 +393,12 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
 
       <Button
         type="button"
-        className="w-full bg-white text-black shadow-md text-base py-2.5 h-11 flex items-center justify-center transition-all duration-200 hover:bg-gray-50 active:scale-[0.99]"
+        variant="outline"
+        className="w-full h-11 text-base"
         onClick={onGoogleLogin}
         disabled={loading}
       >
-        <FcGoogle className="mr-3 h-5 w-5" />
+        <FcGoogle className="h-6 w-6" />
         Entrar com Google
       </Button>
 

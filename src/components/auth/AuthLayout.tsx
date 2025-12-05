@@ -1,73 +1,33 @@
-import React, { useState, useRef, type ReactNode } from "react";
-import { Bug, Moon, Sun, Laptop } from "lucide-react";
+import { type ReactNode } from "react";
+import { Bug, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeProvider";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-
-function CompactThemeToggle() {
-  const { setTheme, theme } = useTheme();
-  const keys = ['light', 'dark', 'system'] as const;
-  const labels = ['Claro', 'Escuro', 'Sistema'];
-  const icons = [<Sun className="h-4 w-4" />, <Moon className="h-4 w-4" />, <Laptop className="h-4 w-4" />];
-  const index = keys.indexOf(theme as any);
-  const [focused, setFocused] = useState<number | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  const focusIndex = (i: number) => {
-    setFocused(i);
-    const btn = containerRef.current?.querySelectorAll('button[data-seg]')[i] as HTMLElement | undefined;
-    btn?.focus();
-  };
-
-  const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      const next = ((focused ?? index) + 1) % keys.length;
-      setTheme(keys[next]);
-      focusIndex(next);
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      const prev = ((focused ?? index) - 1 + keys.length) % keys.length;
-      setTheme(keys[prev]);
-      focusIndex(prev);
-    } else if (e.key === 'Home') {
-      e.preventDefault(); setTheme(keys[0]); focusIndex(0);
-    } else if (e.key === 'End') {
-      e.preventDefault(); setTheme(keys[keys.length - 1]); focusIndex(keys.length - 1);
-    }
-  };
+function ThemeToggle() {
+  const { setTheme } = useTheme();
 
   return (
-    <div className="relative" ref={containerRef} onKeyDown={handleKey} role="tablist" aria-label="Selecionar tema">
-      <div className="relative inline-flex items-center bg-card/50 border border-border rounded-full p-1 shadow-sm">
-        {/* sliding thumb */}
-        <div
-          aria-hidden
-          className="absolute top-1/2 -translate-y-1/2 left-0 h-[calc(100%_-_0.5rem)] w-[33.3333%] rounded-full bg-secondary/90 transition-all duration-300"
-          style={{ transform: `translateX(${(index) * 100}%) translateY(-50%)` }}
-        />
-
-        {keys.map((k, i) => {
-          const selected = index === i;
-          return (
-            <button
-              key={k}
-              data-seg={i}
-              role="tab"
-              aria-selected={selected}
-              tabIndex={0}
-              onFocus={() => setFocused(i)}
-              onBlur={() => setFocused(null)}
-              onClick={() => setTheme(k)}
-              className={`relative z-10 inline-flex items-center justify-center px-3 py-1 text-sm rounded-full transition-colors duration-200 ${selected ? 'text-secondary-foreground' : 'text-muted-foreground'}`}
-              title={labels[i]}
-            >
-              <span className="sr-only">{labels[i]}</span>
-              {icons[i]}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="icon">
+          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setTheme("light")}>
+          Claro
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("dark")}>
+          Escuro
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("system")}>
+          Sistema
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -92,7 +52,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 
       {/* Theme Toggle Top Right */}
       <div className="absolute top-4 right-4 z-20">
-         <CompactThemeToggle />
+         <ThemeToggle />
       </div>
 
       {/* Background Effects */}
