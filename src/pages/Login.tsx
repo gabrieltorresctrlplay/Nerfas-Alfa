@@ -10,29 +10,44 @@ import {
   browserLocalPersistence,
   browserSessionPersistence
 } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { LoginForm } from '@/components/auth/LoginForm';
-import { RegisterForm } from '@/components/auth/RegisterForm';
-import { OnboardingForm } from '@/components/auth/OnboardingForm';
+import { RegisterForm, type RegisterFormData } from '@/components/auth/RegisterForm';
+import { OnboardingForm, type OnboardingFormData } from '@/components/auth/OnboardingForm';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 
 type AuthView = 'login' | 'register' | 'forgot' | 'onboarding';
+
+interface UserProfileData {
+    username: string;
+    email: string;
+    phone: string;
+    dob: string;
+    referralCode?: string;
+}
+
+// Helper type for Firebase errors
+interface FirebaseError {
+    code?: string;
+    message?: string;
+}
 
 export function Login() {
   const [view, setView] = useState<AuthView>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState<string | null>(null);
-  const [googleUser, setGoogleUser] = useState<any>(null);
+  const [googleUser, setGoogleUser] = useState<User | null>(null);
 
   const navigate = useNavigate();
 
   // Helper: Save user profile to Firestore with better error handling
-  const saveUserProfile = async (uid: string, data: any) => {
+  const saveUserProfile = async (uid: string, data: UserProfileData) => {
     try {
         await setDoc(doc(db, "users", uid), {
             username: data.username,
@@ -43,12 +58,11 @@ export function Login() {
             createdAt: new Date().toISOString(),
             role: 'user' // default role
         });
-    } catch (err: any) {
+    } catch (err) {
+        const firebaseError = err as FirebaseError;
         console.error("Critical: Failed to save user profile.", err);
-        // We throw the error up so the calling function knows it failed,
-        // OR we handle it if we want to allow 'zombie' users (not recommended).
-        // For now, let's identify if it's a blocking issue.
-        if (err.message && (err.message.includes("offline") || err.message.includes("network") || err.code === "unavailable")) {
+        
+        if (firebaseError.message && (firebaseError.message.includes("offline") || firebaseError.message.includes("network") || firebaseError.code === "unavailable")) {
              throw new Error("Erro de conexão com o banco de dados. Verifique sua internet ou se algum bloqueador de anúncios está impedindo o acesso.");
         }
         throw err;
@@ -67,9 +81,10 @@ export function Login() {
             return querySnapshot.docs[0].data().email;
         }
         return null;
-    } catch (err: any) {
+    } catch (err) {
+         const firebaseError = err as FirebaseError;
          console.error("Failed to resolve username:", err);
-         if (err.code === "unavailable" || err.message?.includes("offline")) {
+         if (firebaseError.code === "unavailable" || firebaseError.message?.includes("offline")) {
              throw new Error("Erro de conexão ao verificar usuário. Verifique se bloqueadores de anúncios estão ativos.");
          }
          return null;
@@ -103,13 +118,14 @@ export function Login() {
 
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
-    } catch (err: any) {
+    } catch (err) {
+      const firebaseError = err as FirebaseError;
       console.error(err);
-      if (err.message && (err.message.includes("Usuário não encontrado") || err.message.includes("bloqueadores"))) {
-          setError(err.message);
-      } else if (err.code === 'auth/invalid-credential') {
+      if (firebaseError.message && (firebaseError.message.includes("Usuário não encontrado") || firebaseError.message.includes("bloqueadores"))) {
+          setError(firebaseError.message);
+      } else if (firebaseError.code === 'auth/invalid-credential') {
         setError('Usuário/Email ou senha incorretos.');
-      } else if (err.code === 'auth/user-not-found') {
+      } else if (firebaseError.code === 'auth/user-not-found') {
         setError('Conta não encontrada.');
       } else {
         setError('Falha ao entrar. Verifique suas credenciais.');
@@ -119,7 +135,7 @@ export function Login() {
     }
   };
 
-  const handleRegister = async (data: any) => {
+  const handleRegister = async (data: RegisterFormData) => {
     if (!data.username || !data.email || !data.password || !data.phone || !data.dob) {
         setError('Preencha todos os campos obrigatórios.');
         return;
@@ -137,18 +153,25 @@ export function Login() {
       });
 
       // 3. Create Firestore Profile
-      await saveUserProfile(user.uid, data);
+      await saveUserProfile(user.uid, {
+          username: data.username,
+          email: data.email,
+          phone: data.phone,
+          dob: data.dob,
+          referralCode: data.referralCode
+      });
 
       navigate('/');
-    } catch (err: any) {
+    } catch (err) {
+      const firebaseError = err as FirebaseError;
       console.error("Registration Error:", err);
-      if (err.code === 'auth/email-already-in-use') {
+      if (firebaseError.code === 'auth/email-already-in-use') {
         setError('Este email já está sendo usado.');
-      } else if (err.code === 'auth/weak-password') {
+      } else if (firebaseError.code === 'auth/weak-password') {
         setError('A senha é muito fraca (mínimo 6 caracteres).');
-      } else if (err.code === 'auth/invalid-email') {
+      } else if (firebaseError.code === 'auth/invalid-email') {
         setError('Formato de email inválido.');
-      } else if (err.message && err.message.includes("bloqueadores")) {
+      } else if (firebaseError.message && firebaseError.message.includes("bloqueadores")) {
           // If profile creation failed due to adblock, the user IS created in Auth.
           // We might want to warn them.
           setError("Conta criada, mas houve um erro ao salvar seu perfil (bloqueador de anúncios detectado?). Tente fazer login.");
@@ -181,9 +204,10 @@ export function Login() {
         setGoogleUser(user);
         setView('onboarding');
       }
-    } catch (err: any) {
+    } catch (err) {
+      const firebaseError = err as FirebaseError;
       console.error(err);
-      if (err.code === 'auth/popup-closed-by-user') {
+      if (firebaseError.code === 'auth/popup-closed-by-user') {
           setError('Login cancelado.');
       } else {
           setError('Erro ao conectar com Google. Verifique sua conexão.');
@@ -193,7 +217,7 @@ export function Login() {
     }
   };
 
-  const handleOnboardingSubmit = async (data: any) => {
+  const handleOnboardingSubmit = async (data: OnboardingFormData) => {
     if (!googleUser) return;
     if (!data.username || !data.phone || !data.dob) {
         setError('Preencha todos os campos obrigatórios.');
@@ -204,15 +228,16 @@ export function Login() {
     try {
       await saveUserProfile(googleUser.uid, {
         ...data,
-        email: googleUser.email,
-        displayName: googleUser.displayName
+        email: googleUser.email || "", // Google users should have email
+        // displayName: googleUser.displayName // saveUserProfile doesn't expect displayName, it expects username in data
       });
 
       navigate('/');
-    } catch (err: any) {
+    } catch (err) {
+      const firebaseError = err as FirebaseError;
       console.error(err);
-      if (err.message && err.message.includes("bloqueadores")) {
-           setError(err.message);
+      if (firebaseError.message && firebaseError.message.includes("bloqueadores")) {
+           setError(firebaseError.message);
       } else {
            setError('Erro ao salvar perfil.');
       }
@@ -232,9 +257,10 @@ export function Login() {
     try {
       await sendPasswordResetEmail(auth, email);
       setMessage('Link de redefinição enviado para o seu email!');
-    } catch (err: any) {
+    } catch (err) {
+      const firebaseError = err as FirebaseError;
       console.error(err);
-      if (err.code === 'auth/user-not-found') {
+      if (firebaseError.code === 'auth/user-not-found') {
         setError('Email não encontrado.');
       } else {
         setError('Erro ao enviar email.');
@@ -272,7 +298,7 @@ export function Login() {
         <OnboardingForm
           onSubmit={handleOnboardingSubmit}
           loading={loading}
-          email={googleUser?.email}
+          email={googleUser?.email || null}
         />
       )}
 

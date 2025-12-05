@@ -11,6 +11,8 @@
     "build:all": "npm run build:docs && npm run build:firebase",
     "lint": "eslint .",
     "preview": "vite preview",
+    "preview:firebase": "npm run build:firebase && vite preview --outDir dist",
+    "preview:docs": "npm run build:docs && vite preview --outDir docs --base=/Nerfas-Alfa/",
     "deploy": "npm run build:all && npx firebase deploy",
     "test": "vitest"
   },

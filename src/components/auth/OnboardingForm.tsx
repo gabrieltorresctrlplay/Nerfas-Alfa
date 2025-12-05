@@ -4,14 +4,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
+export interface OnboardingFormData {
+  username: string;
+  phone: string;
+  dob: string;
+  referralCode: string;
+}
+
 interface OnboardingFormProps {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: OnboardingFormData) => void;
   loading: boolean;
   email: string | null;
 }
 
 export function OnboardingForm({ onSubmit, loading, email }: OnboardingFormProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<OnboardingFormData>({
     username: "",
     phone: "",
     dob: "",
