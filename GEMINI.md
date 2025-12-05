@@ -29,7 +29,7 @@ O projeto possui **Deploy Unificado e Automático** para dois destinos simultân
 
 ### Destinos de Hospedagem
 1.  **Firebase Hosting (Produção Real):**
-    *   URL: [https://nerfas.web.app](https://nerfas.web.app)
+    *   URL: [https://nerfasalfa.web.app](https://nerfasalfa.web.app)
     *   Pasta de Build: `dist/`
     *   Rota Base: `/`
 2.  **GitHub Pages (Documentação/Preview):**

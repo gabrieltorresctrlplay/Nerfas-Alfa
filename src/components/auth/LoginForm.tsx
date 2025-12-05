@@ -15,8 +15,9 @@ interface LoginFormProps {
 
 export function LoginForm({ onSwitchToRegister, onGoogleLogin, onLogin, onForgotPassword, loading, error }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // CREDENCIAIS DE TESTE (TESTE SUPREMO DO DEPLOY)
+  const [email, setEmail] = useState("admin@teste.com");
+  const [password, setPassword] = useState("123456");
   const [rememberMe, setRememberMe] = useState(true);
 
   const handleSubmit = (e: React.FormEvent) => {
