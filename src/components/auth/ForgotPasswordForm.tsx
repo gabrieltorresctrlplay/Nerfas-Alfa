@@ -28,7 +28,7 @@ export function ForgotPasswordForm({ onBack, onSubmit, loading, message, error }
       </div>
 
       {message && (
-        <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-600 text-sm text-center">
+        <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-primary text-sm text-center">
           {message}
         </div>
       )}

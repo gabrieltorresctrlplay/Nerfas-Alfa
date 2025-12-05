@@ -1,73 +1,43 @@
-# React + TypeScript + Vite
+# Alfa Nerf - Interface do Usuário
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Bem-vindo ao Alfa Nerf, uma aplicação web moderna com uma interface de usuário rica, responsiva e temática. Este README foca nas funcionalidades e na experiência do produto final do ponto de vista do front-end.
 
-Currently, two official plugins are available:
+## ✨ Core Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+A interface foi construída com foco em usabilidade, consistência visual e uma experiência de usuário agradável.
 
-## React Compiler
+### 1. Autenticação Completa e Segura
+- **Login Flexível:** Os usuários podem acessar suas contas usando **Email/Senha** ou de forma rápida com o **login social do Google**.
+- **Registro de Novos Usuários:** Um formulário de cadastro intuitivo, com validação de dados em tempo real.
+- **Fluxo de Onboarding:** Usuários que se cadastram com o Google passam por um rápido processo de onboarding para completar seu perfil.
+- **Recuperação de Senha:** Um fluxo simples para que os usuários possam redefinir suas senhas com segurança via email.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. Dashboard Interativo
+- A aplicação conta com uma página de dashboard central que serve como o principal hub para as funcionalidades do sistema.
+- A navegação entre as diferentes seções — **Visão Geral**, **Perfil** e **Configurações** — é gerenciada de forma fluida, sem recarregar a página.
 
-## Expanding the ESLint configuration
+### 3. Navegação Inteligente
+- **Sidebar Expansível:** Uma barra de navegação lateral que pode ser expandida ou colapsada, otimizando o espaço de tela em desktops.
+- **Menu Mobile:** Em dispositivos móveis, a sidebar se transforma em um menu off-canvas, garantindo uma experiência de uso nativa e intuitiva.
+- **Gerenciamento de Perfil:** Acesso rápido às seções de perfil e configurações diretamente pela sidebar.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 4. Sistema de Temas Dinâmico com o Tema "Nature"
+- **Light, Dark & System:** O usuário pode escolher entre um tema claro, um tema escuro ou um modo que se adapta automaticamente às preferências do seu sistema operacional.
+- **Paleta "Nature":** A interface utiliza uma paleta de cores inspirada na natureza, com tons de verde, marrom e azul, criando uma experiência visual coesa e agradável. Todos os componentes foram alinhados a esta identidade visual.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 5. Design System Consistente e Responsivo
+- **Componentes Padronizados:** Botões, inputs, cards e outros elementos de UI seguem um design system único, garantindo consistência em toda a aplicação.
+- **Responsividade Total:** A interface foi projetada para funcionar perfeitamente em qualquer tamanho de tela, de monitores grandes a smartphones.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🚀 Como Executar o Projeto
+Para visualizar a interface localmente:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Instale as dependências:**
+   ```bash
+   npm install
+   ```
+2. **Execute o servidor de desenvolvimento:**
+   ```bash
+   npm run dev
+   ```
+A aplicação estará disponível em `http://localhost:5173`.

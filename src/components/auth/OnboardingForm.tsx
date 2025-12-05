@@ -4,30 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, User, Phone, Calendar, Gift } from "lucide-react";
 import { DateSelect } from "@/components/ui/date-select";
-import { cn } from "@/lib/utils";
-
-export interface OnboardingFormData {
-  username: string;
-  phone: string;
-  dob: string;
-  referralCode: string;
-}
-
-interface OnboardingFormProps {
-  onSubmit: (data: OnboardingFormData) => void;
-  loading: boolean;
-  email: string | null;
-}
-
-// Função melhorada para máscara de telefone brasileiro
-const formatPhoneNumber = (value: string): string => {
-  const numbers = value.replace(/\D/g, "");
-  
-  if (numbers.length === 0) return "";
-  if (numbers.length <= 2) return `(${numbers}`;
-  if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
-  return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
-};
+import { formatPhoneNumber, cn } from "@/lib/utils";
 
 export function OnboardingForm({ onSubmit, loading, email }: OnboardingFormProps) {
   const [formData, setFormData] = useState<OnboardingFormData>({
