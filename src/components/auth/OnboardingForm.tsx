@@ -6,6 +6,19 @@ import { Loader2, User, Phone, Calendar, Gift } from "lucide-react";
 import { DateSelect } from "@/components/ui/date-select";
 import { formatPhoneNumber, cn } from "@/lib/utils";
 
+export interface OnboardingFormData {
+  username: string;
+  phone: string;
+  dob: string;
+  referralCode: string;
+}
+
+interface OnboardingFormProps {
+  onSubmit: (data: OnboardingFormData) => void;
+  loading: boolean;
+  email?: string | null;
+}
+
 export function OnboardingForm({ onSubmit, loading, email }: OnboardingFormProps) {
   const [formData, setFormData] = useState<OnboardingFormData>({
     username: "",

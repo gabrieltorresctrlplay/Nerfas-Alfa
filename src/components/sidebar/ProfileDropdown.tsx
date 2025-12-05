@@ -9,7 +9,6 @@ import {
   Laptop,
   Check,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { useTheme } from "@/contexts/ThemeProvider";

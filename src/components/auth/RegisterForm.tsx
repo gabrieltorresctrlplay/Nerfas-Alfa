@@ -7,6 +7,8 @@ import { DateSelect } from "@/components/ui/date-select";
 import { cn } from "@/lib/utils";
 import { useRegistrationForm, type RegisterFormData } from "@/hooks/useRegistrationForm";
 
+export type { RegisterFormData };
+
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
   onGoogleLogin: () => void;

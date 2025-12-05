@@ -5,16 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:all",
-    "build:docs": "tsc -b && vite build --base=/Nerfas-Alfa/ --outDir=docs && shx cp docs/index.html docs/404.html",
-    "build:firebase": "tsc -b && vite build --base=/ --outDir=dist",
-    "build:all": "npm run build:docs && npm run build:firebase",
+    "typecheck": "tsc -b",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "preview:firebase": "npm run build:firebase && vite preview --outDir dist",
-    "preview:docs": "npm run build:docs && vite preview --outDir docs --base=/Nerfas-Alfa/",
-    "deploy": "npm run build:all && npx firebase deploy",
-    "test": "vitest"
+    "test": "vitest",
+    "build": "npm run typecheck && npm run build:docs && npm run build:firebase",
+    "build:docs": "vite build --base=/Nerfas-Alfa/ --outDir=docs && shx cp docs/index.html docs/404.html",
+    "build:firebase": "vite build --base=/ --outDir=dist",
+    "preview": "vite preview --outDir dist",
+    "preview:docs": "vite preview --outDir docs --base=/Nerfas-Alfa/",
+    "deploy": "npm run build && npx firebase deploy"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
