@@ -4,10 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
+export interface RegisterFormData {
+  username: string;
+  email: string;
+  password?: string;
+  confirmPassword?: string;
+  phone: string;
+  dob: string;
+  referralCode: string;
+}
+
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
   onGoogleLogin: () => void;
-  onRegister: (data: any) => void;
+  onRegister: (data: RegisterFormData) => void;
   loading: boolean;
   error: string;
 }
