@@ -88,9 +88,9 @@ export function DateSelect({ value, onChange, placeholder = "Selecione a data", 
   }
 
   return (
-    <div className={cn("grid grid-cols-3 gap-3", className)}>
+    <div className={cn("grid grid-cols-3 gap-2", className)}>
       <Select value={day} onValueChange={handleDayChange} disabled={disabled}>
-        <SelectTrigger className="h-12 bg-background/50 text-base">
+        <SelectTrigger className="h-10 bg-background/50 text-sm">
           <SelectValue placeholder="Dia" />
         </SelectTrigger>
         <SelectContent>
@@ -103,7 +103,7 @@ export function DateSelect({ value, onChange, placeholder = "Selecione a data", 
       </Select>
 
       <Select value={month} onValueChange={handleMonthChange} disabled={disabled}>
-        <SelectTrigger className="h-12 bg-background/50 text-base">
+        <SelectTrigger className="h-10 bg-background/50 text-sm">
           <SelectValue placeholder="Mês" />
         </SelectTrigger>
         <SelectContent>
@@ -116,7 +116,7 @@ export function DateSelect({ value, onChange, placeholder = "Selecione a data", 
       </Select>
 
       <Select value={year} onValueChange={handleYearChange} disabled={disabled}>
-        <SelectTrigger className="h-12 bg-background/50 text-base">
+        <SelectTrigger className="h-10 bg-background/50 text-sm">
           <SelectValue placeholder="Ano" />
         </SelectTrigger>
         <SelectContent>

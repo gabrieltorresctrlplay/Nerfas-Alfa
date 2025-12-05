@@ -146,7 +146,7 @@ export function OnboardingForm({ onSubmit, loading, email }: OnboardingFormProps
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
           <div className="space-y-3">
             <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
               <Phone className="w-4 h-4 text-primary" />

@@ -9,10 +9,15 @@ import {
   LogOut,
   Zap,
   User,
+  Sun,
+  Moon,
+  Laptop,
+  Check,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
+import { useTheme } from "@/contexts/ThemeProvider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 interface SidebarProps {
   currentView: "home" | "settings" | "profile";
@@ -110,7 +116,7 @@ export function Sidebar({
           {/* Zone 2: Text/Title area */}
           <div
             className={cn(
-              "flex-1 flex items-center overflow-hidden transition-all duration-300 ease-in-out",
+              "flex-1 flex items-center overflow-hidden transition-all duration-300 ease-in-out px-2",
               expandedState
                 ? "opacity-100 translate-x-0"
                 : "opacity-0 -translate-x-4"
@@ -119,7 +125,7 @@ export function Sidebar({
             <span className="font-semibold text-sidebar-foreground truncate">
               Alfa Nerf
             </span>
-            <span className="ml-2 text-[10px] bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-full shrink-0">
+            <span className="ml-1.5 text-[10px] bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-full shrink-0">
               v1.0
             </span>
           </div>
@@ -159,16 +165,6 @@ export function Sidebar({
               isActive={currentView === "home"}
               onClick={() => {
                 setCurrentView("home");
-                if (isMobile) closeMobile();
-              }}
-              showExpanded={expandedState}
-            />
-            <NavItem
-              icon={<Settings className="w-5 h-5" />}
-              label="Configurações"
-              isActive={currentView === "settings"}
-              onClick={() => {
-                setCurrentView("settings");
                 if (isMobile) closeMobile();
               }}
               showExpanded={expandedState}
@@ -241,7 +237,7 @@ function NavItem({
       )}
       title={!showExpanded ? label : undefined}
     >
-      {/* Icon Container - Centered in the first 48px (which matches the collapsed button width) */}
+      {/* Icon Container - Centered in the first 48px */}
       <div className="w-12 flex items-center justify-center shrink-0 h-full">
         {icon}
       </div>
@@ -278,6 +274,8 @@ function ProfileDropdown({
   isMobile,
   onCloseMobile,
 }: ProfileDropdownProps) {
+  const { theme, setTheme } = useTheme();
+
   const handleViewProfile = () => {
     setCurrentView("profile");
     if (isMobile) onCloseMobile();
@@ -292,6 +290,18 @@ function ProfileDropdown({
     signOut(auth);
   };
 
+  const getThemeIcon = () => {
+    if (theme === "light") return <Sun className="h-4 w-4" />;
+    if (theme === "dark") return <Moon className="h-4 w-4" />;
+    return <Laptop className="h-4 w-4" />;
+  };
+
+  const getThemeLabel = () => {
+    if (theme === "light") return "Claro";
+    if (theme === "dark") return "Escuro";
+    return "Sistema";
+  };
+
   // When collapsed, show only avatar with dropdown
   if (isCollapsed && !isMobile) {
     return (
@@ -302,8 +312,8 @@ function ProfileDropdown({
             className="w-full h-12 p-0 hover:bg-sidebar-accent/50 rounded-md"
             title={user?.email || ""}
           >
-            <div className="w-12 h-12 flex items-center justify-center">
-              <div className="h-10 w-10 rounded-full bg-secondary overflow-hidden flex items-center justify-center shrink-0 border-2 border-border hover:border-primary/50 transition-colors">
+            <div className="w-full h-full flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-full bg-secondary overflow-hidden flex items-center justify-center shrink-0 border-2 border-border hover:border-primary/50">
                 {user?.photoURL ? (
                   <img
                     src={user.photoURL}
@@ -345,7 +355,37 @@ function ProfileDropdown({
             <span>Configurações</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" className="ml-2 p-2 rounded-full h-9 w-9">
+                {getThemeIcon()}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2 rounded-xl">
+              <div className="flex flex-col">
+                <Button variant={theme === "light" ? "secondary" : "ghost"} onClick={() => setTheme("light")} className="justify-start w-full">
+                  <Sun className="mr-2 h-4 w-4" />
+                  <span>Claro</span>
+                  {theme === "light" && <Check className="ml-auto h-4 w-4" />}
+                </Button>
+                <Button variant={theme === "dark" ? "secondary" : "ghost"} onClick={() => setTheme("dark")} className="justify-start w-full">
+                  <Moon className="mr-2 h-4 w-4" />
+                  <span>Escuro</span>
+                  {theme === "dark" && <Check className="ml-auto h-4 w-4" />}
+                </Button>
+                <Button variant={theme === "system" ? "secondary" : "ghost"} onClick={() => setTheme("system")} className="justify-start w-full">
+                  <Laptop className="mr-2 h-4 w-4" />
+                  <span>Sistema</span>
+                  {theme === "system" && <Check className="ml-auto h-4 w-4" />}
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={handleSignOut}
+            className="text-destructive focus:text-destructive"
+          >
             <LogOut className="mr-2 h-4 w-4" />
             <span>Sair</span>
           </DropdownMenuItem>
@@ -366,8 +406,8 @@ function ProfileDropdown({
               "bg-sidebar-accent before:absolute before:left-0 before:h-full before:w-1 before:bg-primary"
           )}
         >
-          <div className="w-12 flex items-center justify-center shrink-0 h-full">
-            <div className="h-9 w-9 rounded-full bg-secondary overflow-hidden flex items-center justify-center shrink-0 border-2 border-border hover:border-primary/50 transition-colors">
+          <div className="w-12 flex items-center justify-center shrink-0 h-full flex-none">
+            <div className="h-9 w-9 rounded-full bg-secondary overflow-hidden flex items-center justify-center shrink-0 border-2 border-border hover:border-primary/50">
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
@@ -382,11 +422,11 @@ function ProfileDropdown({
             </div>
           </div>
 
-          <div className="flex-1 text-left overflow-hidden transition-all duration-300 px-2">
-            <div className="text-sm font-medium text-sidebar-foreground truncate">
+          <div className="flex-1 text-left overflow-hidden px-2.5">
+            <div className="text-sm font-medium text-sidebar-foreground truncate leading-tight">
               {user?.displayName || "Usuário"}
             </div>
-            <div className="text-xs text-muted-foreground truncate">
+            <div className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
               {user?.email}
             </div>
           </div>
@@ -417,6 +457,34 @@ function ProfileDropdown({
           <Settings className="mr-2 h-4 w-4" />
           <span>Configurações</span>
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" className="ml-2 p-2 rounded-full h-9 w-9">
+                {getThemeIcon()}
+                <span className="sr-only">Abrir seletor de tema</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2 rounded-xl">
+              <div className="flex flex-col">
+                <Button variant={theme === "light" ? "secondary" : "ghost"} onClick={() => setTheme("light")} className="justify-start w-full">
+                  <Sun className="mr-2 h-4 w-4" />
+                  <span>Claro</span>
+                  {theme === "light" && <Check className="ml-auto h-4 w-4" />}
+                </Button>
+                <Button variant={theme === "dark" ? "secondary" : "ghost"} onClick={() => setTheme("dark")} className="justify-start w-full">
+                  <Moon className="mr-2 h-4 w-4" />
+                  <span>Escuro</span>
+                  {theme === "dark" && <Check className="ml-auto h-4 w-4" />}
+                </Button>
+                <Button variant={theme === "system" ? "secondary" : "ghost"} onClick={() => setTheme("system")} className="justify-start w-full">
+                  <Laptop className="mr-2 h-4 w-4" />
+                  <span>Sistema</span>
+                  {theme === "system" && <Check className="ml-auto h-4 w-4" />}
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleSignOut}

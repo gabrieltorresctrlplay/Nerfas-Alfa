@@ -1,40 +1,72 @@
-import type { ReactNode } from "react";
+import React, { useState, useRef, type ReactNode } from "react";
 import { Bug, Moon, Sun, Laptop } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeProvider";
 import { Button } from "@/components/ui/button";
 
 function CompactThemeToggle() {
   const { setTheme, theme } = useTheme();
+  const keys = ['light', 'dark', 'system'] as const;
+  const labels = ['Claro', 'Escuro', 'Sistema'];
+  const icons = [<Sun className="h-4 w-4" />, <Moon className="h-4 w-4" />, <Laptop className="h-4 w-4" />];
+  const index = keys.indexOf(theme as any);
+  const [focused, setFocused] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const focusIndex = (i: number) => {
+    setFocused(i);
+    const btn = containerRef.current?.querySelectorAll('button[data-seg]')[i] as HTMLElement | undefined;
+    btn?.focus();
+  };
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const next = ((focused ?? index) + 1) % keys.length;
+      setTheme(keys[next]);
+      focusIndex(next);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prev = ((focused ?? index) - 1 + keys.length) % keys.length;
+      setTheme(keys[prev]);
+      focusIndex(prev);
+    } else if (e.key === 'Home') {
+      e.preventDefault(); setTheme(keys[0]); focusIndex(0);
+    } else if (e.key === 'End') {
+      e.preventDefault(); setTheme(keys[keys.length - 1]); focusIndex(keys.length - 1);
+    }
+  };
 
   return (
-    <div className="flex bg-card/50 backdrop-blur border border-border rounded-full p-1 shadow-sm">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setTheme("light")}
-        className={`h-8 w-8 rounded-full ${theme === 'light' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-        title="Claro"
-      >
-        <Sun className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setTheme("dark")}
-        className={`h-8 w-8 rounded-full ${theme === 'dark' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-        title="Escuro"
-      >
-        <Moon className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setTheme("system")}
-        className={`h-8 w-8 rounded-full ${theme === 'system' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-        title="Sistema"
-      >
-        <Laptop className="h-4 w-4" />
-      </Button>
+    <div className="relative" ref={containerRef} onKeyDown={handleKey} role="tablist" aria-label="Selecionar tema">
+      <div className="relative inline-flex items-center bg-card/50 border border-border rounded-full p-1 shadow-sm">
+        {/* sliding thumb */}
+        <div
+          aria-hidden
+          className="absolute top-1/2 -translate-y-1/2 left-0 h-[calc(100%_-_0.5rem)] w-[33.3333%] rounded-full bg-secondary/90 transition-all duration-300"
+          style={{ transform: `translateX(${(index) * 100}%) translateY(-50%)` }}
+        />
+
+        {keys.map((k, i) => {
+          const selected = index === i;
+          return (
+            <button
+              key={k}
+              data-seg={i}
+              role="tab"
+              aria-selected={selected}
+              tabIndex={0}
+              onFocus={() => setFocused(i)}
+              onBlur={() => setFocused(null)}
+              onClick={() => setTheme(k)}
+              className={`relative z-10 inline-flex items-center justify-center px-3 py-1 text-sm rounded-full transition-colors duration-200 ${selected ? 'text-secondary-foreground' : 'text-muted-foreground'}`}
+              title={labels[i]}
+            >
+              <span className="sr-only">{labels[i]}</span>
+              {icons[i]}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

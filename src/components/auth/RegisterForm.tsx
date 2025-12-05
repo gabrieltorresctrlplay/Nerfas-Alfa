@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Loader2, User, Mail, Phone, Calendar, Gift, Lock } from "lucide-react";
+import { Eye, EyeOff, Loader2, User, Mail, Phone, Calendar, Gift, Lock, X } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
 import { DateSelect } from "@/components/ui/date-select";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,7 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const [formData, setFormData] = useState<RegisterFormData>({
     username: "",
@@ -53,7 +55,6 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneNumber(e.target.value);
     setFormData({ ...formData, phone: formatted });
-    setTouched({ ...touched, phone: true });
     if (localError) setLocalError(null);
   };
 
@@ -95,9 +96,9 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError(null);
-
-    // Mark all fields as touched
+    setHasSubmitted(true);
+    
+    // Mark all fields as touched only on submit
     const allTouched = Object.keys(formData).reduce((acc, key) => {
       acc[key] = true;
       return acc;
@@ -127,86 +128,127 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
       return;
     }
 
+    // Clear any previous errors
+    setLocalError(null);
     onRegister(formData);
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-3 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-          Crie sua conta
-        </h1>
-        <p className="text-muted-foreground text-base">Junte-se ao Alfa Nerf e comece sua jornada</p>
+    <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-500 relative">
+      <Button
+        variant=""
+        size="icon"
+        onClick={onSwitchToLogin}
+        aria-label="Voltar ao login"
+        className="absolute -top-2 -right-2 h-9 w-9"
+      >
+        <X className="w-4 h-4" />
+      </Button>
+
+      <div className="text-center mb-4">
+        <h1 className="text-3xl font-bold text-primary mb-2">Crie sua conta</h1>
+        <p className="text-muted-foreground text-sm">Cadastre-se e comece sua jornada hoje.</p>
       </div>
 
       {(error || localError) && (
-        <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm text-center animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm text-center animate-in fade-in slide-in-from-top-2 duration-300">
           {localError || error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <Label htmlFor="username" className="flex items-center gap-2 text-sm font-medium">
-              <User className="w-4 h-4 text-primary" />
-              Usuário
-            </Label>
-            <Input
-              id="username"
-              value={formData.username}
-              onChange={(e) => {
-                setFormData({...formData, username: e.target.value});
-                setTouched({ ...touched, username: true });
-                if (localError) setLocalError(null);
-              }}
-              onBlur={() => setTouched({ ...touched, username: true })}
-              placeholder="Nome de usuário"
-              required
-              className={cn(
-                "h-12 bg-background/50 text-base transition-all duration-200",
-                touched.username && !formData.username && "border-destructive/50"
-              )}
-            />
-            {touched.username && validateField("username", formData.username) && (
-              <p className="text-xs text-destructive animate-in fade-in mt-1">
-                {validateField("username", formData.username)}
-              </p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Usuario */}
+        <div className="space-y-2">
+          <Label htmlFor="username" className="flex items-center gap-2 text-sm font-medium">
+            <User className="w-4 h-4 text-primary" />
+            Usuário
+          </Label>
+          <Input
+            id="username"
+            value={formData.username}
+            onChange={(e) => {
+              setFormData({...formData, username: e.target.value});
+              if (localError) setLocalError(null);
+            }}
+            onBlur={() => {
+              // Only mark as touched on blur
+              setTouched({ ...touched, username: true });
+            }}
+            placeholder="Nome de usuário"
+            required
+            className={cn(
+              "h-10 bg-background/50 text-sm transition-all duration-200",
+              // Only show error border if form was submitted
+              hasSubmitted && touched.username && validateField("username", formData.username) && "border-destructive/50"
             )}
-          </div>
-          
-          <div className="space-y-3">
-            <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
-              <Mail className="w-4 h-4 text-primary" />
-              Email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => {
-                setFormData({...formData, email: e.target.value});
-                setTouched({ ...touched, email: true });
-                if (localError) setLocalError(null);
-              }}
-              onBlur={() => setTouched({ ...touched, email: true })}
-              placeholder="email@exemplo.com"
-              required
-              className={cn(
-                "h-12 bg-background/50 text-base transition-all duration-200",
-                touched.email && validateField("email", formData.email) && "border-destructive/50"
-              )}
-            />
-            {touched.email && validateField("email", formData.email) && (
-              <p className="text-xs text-destructive animate-in fade-in mt-1">
-                {validateField("email", formData.email)}
-              </p>
-            )}
-          </div>
+          />
+          {/* Only show error message after form submission attempt */}
+          {hasSubmitted && touched.username && validateField("username", formData.username) && (
+            <p className="text-xs text-destructive animate-in fade-in mt-1">
+              {validateField("username", formData.username)}
+            </p>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
+        {/* Email */}
+        <div className="space-y-2">
+          <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
+            <Mail className="w-4 h-4 text-primary" />
+            Email
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => {
+              setFormData({...formData, email: e.target.value});
+              // Remove touched on change to prevent validation during typing
+              if (localError) setLocalError(null);
+            }}
+            onBlur={() => {
+              // Only mark as touched on blur, but don't validate yet
+              setTouched({ ...touched, email: true });
+            }}
+            placeholder="email@exemplo.com"
+            required
+            className={cn(
+              "h-10 bg-background/50 text-sm transition-all duration-200",
+              // Only show error border if form was submitted
+              hasSubmitted && touched.email && validateField("email", formData.email) && "border-destructive/50"
+            )}
+          />
+          {/* Only show error message after form submission attempt */}
+          {hasSubmitted && touched.email && validateField("email", formData.email) && (
+            <p className="text-xs text-destructive animate-in fade-in mt-1">
+              {validateField("email", formData.email)}
+            </p>
+          )}
+        </div>
+
+        {/* Data de Nascimento */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 text-sm font-medium">
+            <Calendar className="w-4 h-4 text-primary" />
+            Data de Nascimento
+          </Label>
+          <DateSelect
+            value={formData.dob}
+            onChange={(value) => {
+              setFormData({...formData, dob: value});
+              if (localError) setLocalError(null);
+            }}
+            disabled={loading}
+          />
+          {hasSubmitted && touched.dob && validateField("dob", formData.dob) && (
+            <p className="text-xs text-destructive animate-in fade-in mt-1">
+              {validateField("dob", formData.dob)}
+            </p>
+          )}
+        </div>
+
+        {/* Telefone e Código de Referência */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
             <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
               <Phone className="w-4 h-4 text-primary" />
               Telefone
@@ -221,56 +263,36 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
               maxLength={15}
               required
               className={cn(
-                "h-12 bg-background/50 text-base transition-all duration-200",
-                touched.phone && validateField("phone", formData.phone) && "border-destructive/50"
+                "h-10 bg-background/50 text-sm transition-all duration-200",
+                hasSubmitted && touched.phone && validateField("phone", formData.phone) && "border-destructive/50"
               )}
             />
-            {touched.phone && validateField("phone", formData.phone) && (
+            {hasSubmitted && touched.phone && validateField("phone", formData.phone) && (
               <p className="text-xs text-destructive animate-in fade-in mt-1">
                 {validateField("phone", formData.phone)}
               </p>
             )}
           </div>
-          
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2 text-sm font-medium">
-              <Calendar className="w-4 h-4 text-primary" />
-              Data de Nascimento
+
+          <div className="space-y-2">
+            <Label htmlFor="referral" className="flex items-center gap-2 text-sm font-medium">
+              <Gift className="w-4 h-4 text-primary shrink-0" />
+              Código Amigo
             </Label>
-            <DateSelect
-              value={formData.dob}
-              onChange={(value) => {
-                setFormData({...formData, dob: value});
-                setTouched({ ...touched, dob: true });
-                if (localError) setLocalError(null);
-              }}
-              disabled={loading}
+            <Input
+              id="referral"
+              value={formData.referralCode}
+              onChange={(e) => setFormData({...formData, referralCode: e.target.value})}
+              placeholder="Opcional"
+              className="h-10 bg-background/50 text-sm"
             />
-            {touched.dob && validateField("dob", formData.dob) && (
-              <p className="text-xs text-destructive animate-in fade-in mt-1">
-                {validateField("dob", formData.dob)}
-              </p>
-            )}
           </div>
         </div>
 
-        <div className="space-y-3">
-          <Label htmlFor="referral" className="flex items-center gap-2 text-sm font-medium">
-            <Gift className="w-4 h-4 text-primary" />
-            Código de Referência
-            <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
-          </Label>
-          <Input
-            id="referral"
-            value={formData.referralCode}
-            onChange={(e) => setFormData({...formData, referralCode: e.target.value})}
-              placeholder="Código de referência (opcional)"
-            className="h-12 bg-background/50 text-base"
-          />
-        </div>
+        {/* Senha e Confirmar Senha */}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3 relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2 relative">
             <Label htmlFor="password" className="flex items-center gap-2 text-sm font-medium">
               <Lock className="w-4 h-4 text-primary" />
               Senha
@@ -282,15 +304,14 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
                 value={formData.password}
                 onChange={(e) => {
                   setFormData({...formData, password: e.target.value});
-                  setTouched({ ...touched, password: true });
                   if (localError) setLocalError(null);
                 }}
                 onBlur={() => setTouched({ ...touched, password: true })}
                 placeholder="Senha"
                 required
                 className={cn(
-                  "h-12 bg-background/50 text-base pr-12 transition-all duration-200",
-                  touched.password && validateField("password", formData.password || "") && "border-destructive/50"
+                  "h-10 bg-background/50 text-sm pr-10 transition-all duration-200",
+                  hasSubmitted && touched.password && validateField("password", formData.password || "") && "border-destructive/50"
                 )}
               />
               <button
@@ -302,14 +323,14 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            {touched.password && validateField("password", formData.password || "") && (
+            {hasSubmitted && touched.password && validateField("password", formData.password || "") && (
               <p className="text-xs text-destructive animate-in fade-in mt-1">
                 {validateField("password", formData.password || "")}
               </p>
             )}
           </div>
           
-          <div className="space-y-3 relative">
+          <div className="space-y-2 relative">
             <Label htmlFor="confirmPassword" className="flex items-center gap-2 text-sm font-medium">
               <Lock className="w-4 h-4 text-primary" />
               Confirmar Senha
@@ -321,15 +342,14 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
                 value={formData.confirmPassword}
                 onChange={(e) => {
                   setFormData({...formData, confirmPassword: e.target.value});
-                  setTouched({ ...touched, confirmPassword: true });
                   if (localError) setLocalError(null);
                 }}
                 onBlur={() => setTouched({ ...touched, confirmPassword: true })}
                 placeholder="Confirmar senha"
                 required
                 className={cn(
-                  "h-12 bg-background/50 text-base pr-12 transition-all duration-200",
-                  touched.confirmPassword && validateField("confirmPassword", formData.confirmPassword || "") && "border-destructive/50"
+                  "h-10 bg-background/50 text-sm pr-10 transition-all duration-200",
+                  hasSubmitted && touched.confirmPassword && validateField("confirmPassword", formData.confirmPassword || "") && "border-destructive/50"
                 )}
               />
               <button
@@ -341,7 +361,7 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
                 {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            {touched.confirmPassword && validateField("confirmPassword", formData.confirmPassword || "") && (
+            {hasSubmitted && touched.confirmPassword && validateField("confirmPassword", formData.confirmPassword || "") && (
               <p className="text-xs text-destructive animate-in fade-in mt-1">
                 {validateField("confirmPassword", formData.confirmPassword || "")}
               </p>
@@ -351,7 +371,7 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
 
         <Button 
           type="submit" 
-          className="w-full mt-8 h-12 text-base font-medium transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]" 
+          className="w-full mt-4 h-11 text-base font-medium transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]" 
           disabled={loading}
         >
           {loading ? (
@@ -365,31 +385,23 @@ export function RegisterForm({ onSwitchToLogin, onGoogleLogin, onRegister, loadi
         </Button>
       </form>
 
-      <div className="relative my-8">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-4 text-muted-foreground">Ou continue com</span>
-        </div>
+      <div className="relative my-6 flex items-center gap-4">
+        <div className="flex-1 border-t border-border" />
+        <span className="text-xs uppercase text-muted-foreground whitespace-nowrap">Ou continue com</span>
+        <div className="flex-1 border-t border-border" />
       </div>
 
-      <Button 
-        type="button" 
-        className="w-full bg-white text-gray-800 hover:bg-gray-50 dark:bg-white dark:text-gray-800 dark:hover:bg-gray-100 shadow-md text-base py-3 h-12 flex items-center justify-center transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]" 
-        onClick={onGoogleLogin} 
+      <Button
+        type="button"
+        className="w-full bg-white text-black shadow-md text-base py-2.5 h-11 flex items-center justify-center transition-all duration-200 hover:bg-gray-50 active:scale-[0.99]"
+        onClick={onGoogleLogin}
         disabled={loading}
       >
-        <svg className="mr-3 h-5 w-5" aria-hidden="true" focusable="false" viewBox="0 0 24 24" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#4285F4" d="M22.56 12.25c0-.61-.06-1.22-.16-1.83H12v3.66h6.15c-.25 1.29-.93 2.39-1.99 3.16v2.33h3c1.76-1.63 2.76-3.88 2.76-6.32z"></path>
-          <path fill="#34A853" d="M12 23c3.08 0 5.66-1.02 7.55-2.77l-3-2.33c-1.06.69-2.45 1.1-4.55 1.1-3.5 0-6.49-2.39-7.55-5.62H1.45v2.41C3.34 20.89 7.42 23 12 23z"></path>
-          <path fill="#FBBC04" d="M4.45 14.5c-.1-.32-.16-.65-.16-.99s.06-.67.16-1c0-3.23 2.39-5.91 5.55-6.84V1.75C6.73 2.92 3.34 7.03 3.34 12c0 .99.16 1.95.45 2.8z"></path>
-          <path fill="#EA4335" d="M12 4.18c1.69 0 3.24.58 4.45 1.76L20.65 2.4C18.49.92 15.34 0 12 0 7.42 0 3.34 2.11 1.45 5.09l3 2.41C5.51 5.92 8.5 3.53 12 3.53v.65z"></path>
-        </svg>
+        <FcGoogle className="mr-3 h-5 w-5" />
         Entrar com Google
       </Button>
 
-      <div className="text-center text-sm mt-8">
+      <div className="text-center text-sm mt-4">
         <span className="text-muted-foreground">Já tem conta? </span>
         <button 
           onClick={onSwitchToLogin} 
