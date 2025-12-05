@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sidebar } from "@/components/Sidebar";
+import { Sidebar } from "@/components/sidebar/Sidebar";
 import { cn } from "@/lib/utils";
 
 // Import the new view components
