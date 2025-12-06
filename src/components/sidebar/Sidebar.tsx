@@ -1,4 +1,5 @@
 ﻿import type { ComponentType, CSSProperties } from "react";
+import { useRef } from "react";
 import {
   LayoutDashboard,
   Settings2,
@@ -43,6 +44,7 @@ const navItems: { id: SidebarView; label: string; icon: ComponentType<{ classNam
 export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: SidebarProps) {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const railSize = "calc(3.5rem + 1px)";
   const iconSquare = "h-10 w-10";
@@ -158,10 +160,15 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
         </nav>
 
         <footer className="border-t border-border/60 w-full px-2 py-2">
-          <DropdownMenu>
+            <DropdownMenu
+            onOpenChange={(open) => {
+              if (!open) triggerRef.current?.blur();
+            }}
+          >
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
+                ref={triggerRef}
                 className={cn(
                   "rounded-xl transition-colors duration-200 hover:bg-muted/70 flex items-center overflow-hidden",
                   "h-10 w-full"
@@ -212,6 +219,12 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
               sideOffset={14}
               alignOffset={0}
               className="w-60 mb-2.5"
+              onCloseAutoFocus={(event) => {
+                // Evita que o foco volte para o trigger ao fechar via clique fora,
+                // mas mantém foco visível em outros cenários (teclado).
+                event.preventDefault();
+                triggerRef.current?.blur();
+              }}
             >
               <DropdownMenuLabel className="flex items-center gap-3">
                 {user?.photoURL ? (
@@ -248,7 +261,6 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>Tema</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent
-                  align="start"
                   side="right"
                   sideOffset={5}
                   alignOffset={0}
