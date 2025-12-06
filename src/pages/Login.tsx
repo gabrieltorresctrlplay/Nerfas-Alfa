@@ -31,6 +31,15 @@ interface UserProfileData {
     referralCode?: string;
 }
 
+const isProfileComplete = (data: Partial<UserProfileData> | undefined) => {
+  if (!data) return false;
+  const requiredFields: Array<keyof UserProfileData> = ["username", "email", "phone", "dob"];
+  return requiredFields.every((field) => {
+    const value = data[field];
+    return typeof value === "string" && value.trim().length > 0;
+  });
+};
+
 // Helper type for Firebase errors
 interface FirebaseError {
     code?: string;
@@ -43,6 +52,7 @@ export function Login() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [googleUser, setGoogleUser] = useState<User | null>(null);
+  const [onboardingDefaults, setOnboardingDefaults] = useState<OnboardingFormData | null>(null);
 
   const navigate = useNavigate();
 
@@ -192,18 +202,26 @@ export function Login() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if user profile exists
+      // Check if user profile exists or is complete (legacy data may be partial)
       const docRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(docRef);
+      const profileData = docSnap.exists() ? (docSnap.data() as Partial<UserProfileData>) : undefined;
+      const needsProfile = !profileData || !isProfileComplete(profileData);
 
-      if (docSnap.exists()) {
-        // Already has profile
-        navigate('/');
-      } else {
-        // Needs onboarding
+      if (needsProfile) {
         setGoogleUser(user);
+        setOnboardingDefaults({
+          username: profileData?.username || user.displayName || "",
+          phone: profileData?.phone || "",
+          dob: profileData?.dob || "",
+          referralCode: profileData?.referralCode || "",
+        });
         setView('onboarding');
+        return;
       }
+
+      // Already has a complete profile
+      navigate('/');
     } catch (err) {
       const firebaseError = err as FirebaseError;
       console.error(err);
@@ -229,9 +247,13 @@ export function Login() {
       await saveUserProfile(googleUser.uid, {
         ...data,
         email: googleUser.email || "", // Google users should have email
-        // displayName: googleUser.displayName // saveUserProfile doesn't expect displayName, it expects username in data
       });
 
+      // Keep Firebase Auth displayName aligned with saved username
+      await updateProfile(googleUser, { displayName: data.username });
+
+      setOnboardingDefaults(null);
+      setGoogleUser(null);
       navigate('/');
     } catch (err) {
       const firebaseError = err as FirebaseError;
@@ -299,6 +321,7 @@ export function Login() {
           onSubmit={handleOnboardingSubmit}
           loading={loading}
           email={googleUser?.email || null}
+          initialData={onboardingDefaults || undefined}
         />
       )}
 

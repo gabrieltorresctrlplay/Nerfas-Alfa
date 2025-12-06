@@ -17,19 +17,21 @@ interface OnboardingFormProps {
   onSubmit: (data: OnboardingFormData) => void;
   loading: boolean;
   email?: string | null;
+  initialData?: Partial<OnboardingFormData>;
 }
 
-export function OnboardingForm({ onSubmit, loading, email }: OnboardingFormProps) {
+export function OnboardingForm({ onSubmit, loading, email, initialData }: OnboardingFormProps) {
   const [formData, setFormData] = useState<OnboardingFormData>({
-    username: "",
-    phone: "",
-    dob: "",
-    referralCode: ""
+    username: initialData?.username || "",
+    phone: initialData?.phone || "",
+    dob: initialData?.dob || "",
+    referralCode: initialData?.referralCode || ""
   });
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Prefill from initialData when provided (legacy users or Google display name)
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneNumber(e.target.value);
     setFormData({ ...formData, phone: formatted });

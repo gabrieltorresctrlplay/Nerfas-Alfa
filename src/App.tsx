@@ -1,13 +1,18 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ProfileStatusProvider, useProfileStatus } from '@/contexts/ProfileStatusProvider';
 import { Login } from '@/pages/Login';
 import { Dashboard } from '@/pages/Dashboard';
+import { CompleteProfile } from '@/pages/CompleteProfile';
+import { useLocation } from 'react-router-dom';
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const { user, loading } = useAuth();
+  const { status, checking } = useProfileStatus();
+  const location = useLocation();
 
-  if (loading) {
+  if (loading || checking || status === 'unknown') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -17,6 +22,10 @@ function PrivateRoute({ children }: { children: React.ReactElement }) {
 
   if (!user) {
     return <Navigate to="/login" />;
+  }
+
+  if (status === 'incomplete' && location.pathname !== '/complete-profile') {
+    return <Navigate to="/complete-profile" replace />;
   }
 
   return children;
@@ -39,26 +48,36 @@ function PublicRoute({ children }: { children: React.ReactElement }) {
 function App() {
   return (
     <AuthProvider>
-      <Router basename={import.meta.env.BASE_URL}>
-        <Routes>
-          <Route 
-            path="/login" 
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            } 
-          />
-          <Route 
-            path="/" 
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            } 
-          />
-        </Routes>
-      </Router>
+      <ProfileStatusProvider>
+        <Router basename={import.meta.env.BASE_URL}>
+          <Routes>
+            <Route 
+              path="/login" 
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              } 
+            />
+            <Route
+              path="/complete-profile"
+              element={
+                <PrivateRoute>
+                  <CompleteProfile />
+                </PrivateRoute>
+              }
+            />
+            <Route 
+              path="/" 
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              } 
+            />
+          </Routes>
+        </Router>
+      </ProfileStatusProvider>
     </AuthProvider>
   );
 }
