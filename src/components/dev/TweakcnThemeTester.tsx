@@ -1,15 +1,30 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { JSX } from "react";
 import { useTheme } from "@/contexts/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProfileStatus } from "@/contexts/ProfileStatusProvider";
+import {
+  useProfileStatus,
+} from "@/contexts/ProfileStatusProvider";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDoc, getDocs, query, where, limit } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  limit,
+} from "firebase/firestore";
 
 type ThemeMode = "light" | "dark";
 type ThemeKey = "amberMinimal" | "graphite" | "comicNight";
 type ThemePreference = ThemeMode | "system";
-
-type ThemeTokens = Record<(typeof TOKEN_KEYS)[number], string>;
 
 const TOKEN_KEYS = [
   "background",
@@ -33,6 +48,8 @@ const TOKEN_KEYS = [
   "ring",
   "radius",
 ] as const;
+
+type ThemeTokens = Record<(typeof TOKEN_KEYS)[number], string>;
 
 const PRESETS: Record<
   ThemeKey,
@@ -189,15 +206,23 @@ const PRESETS: Record<
 
 const STORAGE_KEY = "tweakcn-dev-theme";
 
-const isThemeKey = (value: string | null): value is ThemeKey =>
-  value === "amberMinimal" || value === "graphite" || value === "comicNight";
+function isThemeKey(value: string | null): value is ThemeKey {
+  return (
+    value === "amberMinimal" || value === "graphite" || value === "comicNight"
+  );
+}
 
-const resolveMode = (theme: ThemePreference, prefersDark: boolean): ThemeMode =>
-  theme === "system" ? (prefersDark ? "dark" : "light") : theme;
+function resolveMode(
+  theme: ThemePreference,
+  prefersDark: boolean
+): ThemeMode {
+  return theme === "system" ? (prefersDark ? "dark" : "light") : theme;
+}
 
-export function TweakcnThemeTester() {
+export function TweakcnThemeTester(): JSX.Element | null {
   const { user } = useAuth();
-  const { profile: profileStatusData, status: profileStatus } = useProfileStatus();
+  const { profile: profileStatusData, status: profileStatus } =
+    useProfileStatus();
   const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isAllowed, setIsAllowed] = useState(false);
@@ -205,7 +230,7 @@ export function TweakcnThemeTester() {
   const [systemPrefersDark, setSystemPrefersDark] = useState(() =>
     typeof window === "undefined"
       ? false
-      : window.matchMedia("(prefers-color-scheme: dark)").matches,
+      : window.matchMedia("(prefers-color-scheme: dark)").matches
   );
   const [currentTheme, setCurrentTheme] = useState<ThemeKey>(() => {
     if (typeof window === "undefined") return "amberMinimal";
@@ -216,7 +241,7 @@ export function TweakcnThemeTester() {
 
   const mode = useMemo(
     () => resolveMode(theme, systemPrefersDark),
-    [theme, systemPrefersDark],
+    [theme, systemPrefersDark]
   );
 
   const verifyReferralCode = useCallback(async () => {
@@ -227,12 +252,15 @@ export function TweakcnThemeTester() {
     }
 
     // 1) Use profile data already loaded by ProfileStatusProvider when available
-    if (profileStatusData && profileStatus !== "checking" && profileStatus !== "unknown") {
+    if (
+      profileStatusData &&
+      profileStatus !== "checking" &&
+      profileStatus !== "unknown"
+    ) {
       const referral = profileStatusData.referralCode;
       setIsAllowed(referral?.trim().toLowerCase() === "sirob");
       setHasChecked(true);
       if (referral?.trim().toLowerCase() === "sirob") return;
-      // If not allowed via profile context, fall through to Firestore fetch for double-check.
     }
 
     try {
@@ -250,7 +278,9 @@ export function TweakcnThemeTester() {
           limit(1)
         );
         const emailMatch = await getDocs(q);
-        const data = emailMatch.docs[0]?.data() as { referralCode?: string } | undefined;
+        const data = emailMatch.docs[0]?.data() as
+          | { referralCode?: string }
+          | undefined;
         referral = data?.referralCode;
       }
 
@@ -264,13 +294,22 @@ export function TweakcnThemeTester() {
   }, [user, profileStatus, profileStatusData]);
 
   useEffect(() => {
-    verifyReferralCode();
+    // We can't synchronously call something that sets state if this effect is triggered by a render caused by that same state.
+    // However, here we just want to run it on mount or when dependencies change.
+    // The lint error is strict about "calling setState synchronously within an effect".
+    // But verifyReferralCode is async (returns a promise).
+    // The issue is that ESLint *thinks* it might be synchronous or it sees a call that it considers risky.
+    // We'll wrap it in a setTimeout to push it to the next tick, breaking the synchronous cycle.
+    const timeout = setTimeout(() => {
+        void verifyReferralCode();
+    }, 0);
+    return () => clearTimeout(timeout);
   }, [verifyReferralCode]);
 
   useEffect(() => {
     if (!user) return;
     const handleFocus = () => {
-      verifyReferralCode();
+      void verifyReferralCode();
     };
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);

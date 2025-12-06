@@ -1,10 +1,15 @@
-import { type ReactNode } from "react";
+import type { ReactNode, JSX } from "react";
 import { Bug, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeProvider";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-function ThemeToggle() {
+function ThemeToggle(): JSX.Element {
   const { setTheme } = useTheme();
 
   return (
@@ -31,10 +36,9 @@ function ThemeToggle() {
   );
 }
 
-export function AuthLayout({ children }: { children: ReactNode }) {
+export function AuthLayout({ children }: { children: ReactNode }): JSX.Element {
   return (
     <div className="min-h-screen relative w-full overflow-hidden bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
-
       {/* Mobile Guard (Ant Check) - Only visible on very small screens (< 320px) */}
       <style>{`
         .ant-guard { display: none; }
@@ -44,15 +48,21 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         }
       `}</style>
       <div className="ant-guard fixed inset-0 z-[100] bg-background flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
-         <Bug className="w-24 h-24 mb-6 text-primary animate-bounce" />
-         <h1 className="text-2xl font-bold mb-4">O que é isso? Uma tela para formigas? 🐜</h1>
-         <p className="text-muted-foreground">Aumenta aí, chefia! Não dá pra usar o Alfa Nerf desse tamanho.</p>
-         <p className="text-xs text-muted-foreground mt-8 opacity-50">Easter Egg #BugFinder</p>
+        <Bug className="w-24 h-24 mb-6 text-primary animate-bounce" />
+        <h1 className="text-2xl font-bold mb-4">
+          O que é isso? Uma tela para formigas? 🐜
+        </h1>
+        <p className="text-muted-foreground">
+          Aumenta aí, chefia! Não dá pra usar o Alfa Nerf desse tamanho.
+        </p>
+        <p className="text-xs text-muted-foreground mt-8 opacity-50">
+          Easter Egg #BugFinder
+        </p>
       </div>
 
       {/* Theme Toggle Top Right */}
       <div className="absolute top-4 right-4 z-20">
-         <ThemeToggle />
+        <ThemeToggle />
       </div>
 
       {/* Background Effects */}
@@ -62,9 +72,9 @@ export function AuthLayout({ children }: { children: ReactNode }) {
       {/* Content */}
       <div className="main-content relative z-10 min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-card/50 backdrop-blur-xl border border-border p-8 rounded-2xl shadow-2xl relative transition-all duration-300">
-            {children}
+          {children}
         </div>
       </div>
     </div>
-  )
+  );
 }

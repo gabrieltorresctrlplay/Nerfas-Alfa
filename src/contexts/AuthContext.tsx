@@ -1,23 +1,26 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import type { User } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '@/lib/firebase';
-import { ConfigErrorScreen } from '@/components/auth/ConfigErrorScreen';
+import { createContext, useContext, useEffect, useState } from "react";
+import type { ReactNode, JSX } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import type { User } from "firebase/auth";
+import { auth, isFirebaseConfigured } from "@/lib/firebase";
+import { ConfigErrorScreen } from "@/components/auth/ConfigErrorScreen";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+});
 
 // eslint-disable-next-line react-refresh/only-export-components
-export function useAuth() {
+export function useAuth(): AuthContextType {
   return useContext(AuthContext);
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   if (!isFirebaseConfigured) {
-      return <ConfigErrorScreen />;
+    return <ConfigErrorScreen />;
   }
 
   return (
