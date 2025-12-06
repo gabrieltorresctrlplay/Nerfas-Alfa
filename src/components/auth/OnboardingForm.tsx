@@ -43,11 +43,12 @@ export function OnboardingForm({ onSubmit, loading, email }: OnboardingFormProps
         if (!value) return "Preencha este campo";
         if (value.length < 3) return "O usuário deve ter no mínimo 3 caracteres";
         return null;
-      case "phone":
+      case "phone": {
         if (!value) return "Preencha este campo";
         const phoneNumbers = value.replace(/\D/g, "");
         if (phoneNumbers.length < 10) return "Telefone inválido";
         return null;
+      }
       case "dob":
         if (!value) return "Preencha este campo";
         return null;
