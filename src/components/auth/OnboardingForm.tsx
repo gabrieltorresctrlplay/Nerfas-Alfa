@@ -1,9 +1,23 @@
 import { useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  Calendar as CalendarIcon,
+  Loader2,
+  User,
+  Phone,
+  Gift,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, User, Phone, Calendar, Gift } from "lucide-react";
-import { DateSelect } from "@/components/ui/date-select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { formatPhoneNumber, cn } from "@/lib/utils";
 
 export interface OnboardingFormData {
@@ -20,14 +34,20 @@ interface OnboardingFormProps {
   initialData?: Partial<OnboardingFormData>;
 }
 
-export function OnboardingForm({ onSubmit, loading, email, initialData }: OnboardingFormProps) {
+export function OnboardingForm({
+  onSubmit,
+  loading,
+  email,
+  initialData,
+}: OnboardingFormProps) {
   const [formData, setFormData] = useState<OnboardingFormData>({
     username: initialData?.username || "",
     phone: initialData?.phone || "",
     dob: initialData?.dob || "",
-    referralCode: initialData?.referralCode || ""
+    referralCode: initialData?.referralCode || "",
   });
 
+  const [date, setDate] = useState<Date | undefined>(undefined);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -39,11 +59,23 @@ export function OnboardingForm({ onSubmit, loading, email, initialData }: Onboar
     if (localError) setLocalError(null);
   };
 
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    setDate(selectedDate);
+    if (selectedDate) {
+      setFormData({ ...formData, dob: format(selectedDate, "yyyy-MM-dd") });
+    } else {
+      setFormData({ ...formData, dob: "" });
+    }
+    setTouched({ ...touched, dob: true });
+    if (localError) setLocalError(null);
+  };
+
   const validateField = (field: string, value: string) => {
     switch (field) {
       case "username":
         if (!value) return "Preencha este campo";
-        if (value.length < 3) return "O usuário deve ter no mínimo 3 caracteres";
+        if (value.length < 3)
+          return "O usuário deve ter no mínimo 3 caracteres";
         return null;
       case "phone": {
         if (!value) return "Preencha este campo";
@@ -75,7 +107,10 @@ export function OnboardingForm({ onSubmit, loading, email, initialData }: Onboar
     // Validate required fields
     const errors: Record<string, string | null> = {};
     ["username", "phone", "dob"].forEach((key) => {
-      const error = validateField(key, formData[key as keyof OnboardingFormData] || "");
+      const error = validateField(
+        key,
+        formData[key as keyof OnboardingFormData] || ""
+      );
       if (error) errors[key] = error;
     });
 
@@ -99,7 +134,8 @@ export function OnboardingForm({ onSubmit, loading, email, initialData }: Onboar
         </p>
         {email && (
           <p className="text-sm text-muted-foreground mt-3">
-            Conectado como: <span className="text-primary font-medium">{email}</span>
+            Conectado como:{" "}
+            <span className="text-primary font-medium">{email}</span>
           </p>
         )}
       </div>
@@ -112,7 +148,10 @@ export function OnboardingForm({ onSubmit, loading, email, initialData }: Onboar
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-3">
-          <Label htmlFor="username" className="flex items-center gap-2 text-sm font-medium">
+          <Label
+            htmlFor="username"
+            className="flex items-center gap-2 text-sm font-medium"
+          >
             <User className="w-4 h-4 text-primary" />
             Escolha um Usuário
           </Label>
@@ -120,7 +159,7 @@ export function OnboardingForm({ onSubmit, loading, email, initialData }: Onboar
             id="username"
             value={formData.username}
             onChange={(e) => {
-              setFormData({...formData, username: e.target.value});
+              setFormData({ ...formData, username: e.target.value });
               setTouched({ ...touched, username: true });
               if (localError) setLocalError(null);
             }}
@@ -129,19 +168,25 @@ export function OnboardingForm({ onSubmit, loading, email, initialData }: Onboar
             required
             className={cn(
               "h-12 bg-background/50 text-base transition-all duration-200",
-              touched.username && validateField("username", formData.username) && "border-destructive/50"
+              touched.username &&
+                validateField("username", formData.username) &&
+                "border-destructive/50"
             )}
           />
-          {touched.username && validateField("username", formData.username) && (
-            <p className="text-xs text-destructive animate-in fade-in mt-1">
-              {validateField("username", formData.username)}
-            </p>
-          )}
+          {touched.username &&
+            validateField("username", formData.username) && (
+              <p className="text-xs text-destructive animate-in fade-in mt-1">
+                {validateField("username", formData.username)}
+              </p>
+            )}
         </div>
 
         <div className="space-y-6">
           <div className="space-y-3">
-            <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
+            <Label
+              htmlFor="phone"
+              className="flex items-center gap-2 text-sm font-medium"
+            >
               <Phone className="w-4 h-4 text-primary" />
               Telefone
             </Label>
@@ -156,7 +201,9 @@ export function OnboardingForm({ onSubmit, loading, email, initialData }: Onboar
               required
               className={cn(
                 "h-12 bg-background/50 text-base transition-all duration-200",
-                touched.phone && validateField("phone", formData.phone) && "border-destructive/50"
+                touched.phone &&
+                  validateField("phone", formData.phone) &&
+                  "border-destructive/50"
               )}
             />
             {touched.phone && validateField("phone", formData.phone) && (
@@ -165,21 +212,43 @@ export function OnboardingForm({ onSubmit, loading, email, initialData }: Onboar
               </p>
             )}
           </div>
-          
+
           <div className="space-y-3">
             <Label className="flex items-center gap-2 text-sm font-medium">
-              <Calendar className="w-4 h-4 text-primary" />
+              <CalendarIcon className="w-4 h-4 text-primary" />
               Data de Nascimento
             </Label>
-            <DateSelect
-              value={formData.dob}
-              onChange={(value) => {
-                setFormData({...formData, dob: value});
-                setTouched({ ...touched, dob: true });
-                if (localError) setLocalError(null);
-              }}
-              disabled={loading}
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal bg-background/50 h-12",
+                    !date && "text-muted-foreground",
+                    touched.dob &&
+                      validateField("dob", formData.dob) &&
+                      "border-destructive/50"
+                  )}
+                  disabled={loading}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? (
+                    format(date, "PPP", { locale: ptBR })
+                  ) : (
+                    <span>Selecione uma data</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={handleDateSelect}
+                  initialFocus
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
             {touched.dob && validateField("dob", formData.dob) && (
               <p className="text-xs text-destructive animate-in fade-in mt-1">
                 {validateField("dob", formData.dob)}
@@ -189,23 +258,30 @@ export function OnboardingForm({ onSubmit, loading, email, initialData }: Onboar
         </div>
 
         <div className="space-y-3">
-          <Label htmlFor="referral" className="flex items-center gap-2 text-sm font-medium">
+          <Label
+            htmlFor="referral"
+            className="flex items-center gap-2 text-sm font-medium"
+          >
             <Gift className="w-4 h-4 text-primary" />
             Código de Referência
-            <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
+            <span className="text-xs text-muted-foreground font-normal">
+              (opcional)
+            </span>
           </Label>
           <Input
             id="referral"
             value={formData.referralCode}
-            onChange={(e) => setFormData({...formData, referralCode: e.target.value})}
+            onChange={(e) =>
+              setFormData({ ...formData, referralCode: e.target.value })
+            }
             placeholder="Código de referência (opcional)"
             className="h-12 bg-background/50 text-base"
           />
         </div>
 
-        <Button 
-          type="submit" 
-          className="w-full mt-8 h-12 text-base font-medium transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]" 
+        <Button
+          type="submit"
+          className="w-full mt-8 h-12 text-base font-medium transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
           disabled={loading}
         >
           {loading ? (

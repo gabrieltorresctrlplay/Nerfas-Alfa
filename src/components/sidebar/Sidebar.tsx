@@ -1,6 +1,5 @@
 import type { ComponentType, CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   LayoutDashboard,
   Settings2,
@@ -27,6 +26,17 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -40,11 +50,18 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-const navItems: { id: SidebarView; label: string; icon: ComponentType<{ className?: string }> }[] = [
-  { id: "home", label: "Inicio", icon: LayoutDashboard },
-];
+const navItems: {
+  id: SidebarView;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+}[] = [{ id: "home", label: "Inicio", icon: LayoutDashboard }];
 
-export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: SidebarProps) {
+export function Sidebar({
+  currentView,
+  onNavigate,
+  isCollapsed,
+  onToggle,
+}: SidebarProps) {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -72,7 +89,10 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
       const triggerRect = themeTriggerRef.current?.getBoundingClientRect();
       const contentRect = themeContentRef.current?.getBoundingClientRect();
       if (triggerRect && contentRect) {
-        const offset = triggerRect.bottom - triggerRect.top - (contentRect.bottom - contentRect.top);
+        const offset =
+          triggerRect.bottom -
+          triggerRect.top -
+          (contentRect.bottom - contentRect.top);
         setThemeAlignOffset(offset);
       }
     };
@@ -85,22 +105,35 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
   const expandedWidth = "16rem";
   const sidebarWidth = isCollapsed ? railSize : expandedWidth;
 
-  const defaultAvatarUrl = "https://i.pinimg.com/736x/f7/cd/03/f7cd03608a383f79c6e64c0c4b7d02ae.jpg";
+  const defaultAvatarUrl =
+    "https://i.pinimg.com/736x/f7/cd/03/f7cd03608a383f79c6e64c0c4b7d02ae.jpg";
   const isGooglePlaceholder = (url?: string) => {
     if (!url) return false;
     const normalized = url.toLowerCase();
     if (!normalized.includes("googleusercontent.com")) return false;
     if (normalized.includes("/a/default")) return true;
-    const hasBasicAPath = normalized.includes("/a/") && !normalized.includes("/a-/");
+    const hasBasicAPath =
+      normalized.includes("/a/") && !normalized.includes("/a-/");
     const hasDefaultSize = normalized.includes("=s96-c");
-    const knownLetter = "https://lh3.googleusercontent.com/a/ACg8ocLsOqyqVyXzigFgA-og6EV1xuWjS8q4lXJbDEXl_6X78Xyqwg=s96-c".toLowerCase();
+    const knownLetter =
+      "https://lh3.googleusercontent.com/a/ACg8ocLsOqyqVyXzigFgA-og6EV1xuWjS8q4lXJbDEXl_6X78Xyqwg=s96-c".toLowerCase();
     if (normalized === knownLetter) return true;
     return hasBasicAPath && hasDefaultSize;
   };
   const avatarUrl =
-    user?.photoURL && user.photoURL.trim().length > 0 && !isGooglePlaceholder(user.photoURL)
+    user?.photoURL &&
+    user.photoURL.trim().length > 0 &&
+    !isGooglePlaceholder(user.photoURL)
       ? user.photoURL
       : defaultAvatarUrl;
+
+  const userInitials =
+    user?.displayName
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
 
   return (
     <>
@@ -137,30 +170,44 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
                   isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
                 )}
               >
-                <div className={`grid ${iconSquare} aspect-square place-items-center rounded-xl bg-primary/15 text-primary font-semibold shrink-0`}>
+                <div
+                  className={`grid ${iconSquare} aspect-square place-items-center rounded-xl bg-primary/15 text-primary font-semibold shrink-0`}
+                >
                   NF
                 </div>
                 <div
                   className={cn(
                     "leading-tight transition-[max-width,opacity] duration-300 ease-in-out whitespace-nowrap",
-                    isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[200px] opacity-100"
+                    isCollapsed
+                      ? "max-w-0 opacity-0 pointer-events-none"
+                      : "max-w-[200px] opacity-100"
                   )}
                 >
-                  <p className="text-base font-semibold tracking-tight">Nerfas</p>
-                  <p className="text-xs text-muted-foreground">Control Center</p>
+                  <p className="text-base font-semibold tracking-tight">
+                    Nerfas
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Control Center
+                  </p>
                 </div>
               </div>
               <Button
                 variant="secondary"
                 onClick={onToggle}
-                aria-label={isCollapsed ? "Expandir sidebar" : "Recolher sidebar"}
+                aria-label={
+                  isCollapsed ? "Expandir sidebar" : "Recolher sidebar"
+                }
                 className={cn(
                   `grid ${iconSquare} aspect-square place-items-center rounded-xl border border-border/60 shadow-sm transition-all duration-300`,
                   "shrink-0",
                   isCollapsed ? "mx-auto" : ""
                 )}
               >
-                {isCollapsed ? <ChevronsLeft className="h-4 w-4 rotate-180" /> : <ChevronsLeft className="h-4 w-4" />}
+                {isCollapsed ? (
+                  <ChevronsLeft className="h-4 w-4 rotate-180" />
+                ) : (
+                  <ChevronsLeft className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </header>
@@ -183,7 +230,9 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
                       : "text-muted-foreground hover:bg-muted/60"
                   )}
                 >
-                  <span className={`flex items-center justify-center ${iconSquare} aspect-square text-current shrink-0`}>
+                  <span
+                    className={`flex items-center justify-center ${iconSquare} aspect-square text-current shrink-0`}
+                  >
                     <Icon className={iconSize} />
                   </span>
                   <span
@@ -219,13 +268,19 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
                     "h-10 w-full"
                   )}
                 >
-                  <div className={`shrink-0 ${iconSquare} flex items-center justify-center`}>
-                    <img
-                      src={avatarUrl}
-                      alt={user?.displayName || "Foto de perfil"}
-                      className="h-[28px] w-[28px] aspect-square rounded-xl object-cover"
-                      draggable={false}
-                    />
+                  <div
+                    className={`shrink-0 ${iconSquare} flex items-center justify-center`}
+                  >
+                    <Avatar className="h-[28px] w-[28px] rounded-lg">
+                      <AvatarImage
+                        src={avatarUrl}
+                        alt={user?.displayName || "User"}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="rounded-lg text-xs">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
                   <span
                     className={cn(
@@ -259,8 +314,6 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
                 alignOffset={0}
                 className="w-60 mb-2.5"
                 onCloseAutoFocus={(event) => {
-                  // Evita que o foco volte para o trigger ao fechar via clique fora,
-                  // mas mantem foco visivel em outros cenarios (teclado).
                   event.preventDefault();
                   triggerRef.current?.blur();
                 }}
@@ -274,7 +327,7 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
                   className="flex items-center gap-2"
                 >
                   <UserRound className="h-4 w-4" />
-                  <span>My Profile</span>
+                  <span>Meu Perfil</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
@@ -285,7 +338,7 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
                   className="flex items-center gap-2"
                 >
                   <Settings2 className="h-4 w-4" />
-                  <span>Settings</span>
+                  <span>Configurações</span>
                 </DropdownMenuItem>
                 <DropdownMenuSub
                   open={themeOpen}
@@ -293,7 +346,10 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
                     setThemeOpen(open);
                   }}
                 >
-                  <DropdownMenuSubTrigger ref={themeTriggerRef} className="flex items-center gap-2">
+                  <DropdownMenuSubTrigger
+                    ref={themeTriggerRef}
+                    className="flex items-center gap-2"
+                  >
                     <Palette className="h-4 w-4" />
                     <span>Tema</span>
                   </DropdownMenuSubTrigger>
@@ -325,7 +381,7 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
                         }}
                       >
                         <Sun className="h-4 w-4" />
-                        <span>Light</span>
+                        <span>Claro</span>
                       </DropdownMenuRadioItem>
                       <DropdownMenuRadioItem
                         value="dark"
@@ -337,7 +393,7 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
                         }}
                       >
                         <Moon className="h-4 w-4" />
-                        <span>Dark</span>
+                        <span>Escuro</span>
                       </DropdownMenuRadioItem>
                       <DropdownMenuRadioItem
                         value="system"
@@ -349,7 +405,7 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
                         }}
                       >
                         <Laptop className="h-4 w-4" />
-                        <span>System</span>
+                        <span>Sistema</span>
                       </DropdownMenuRadioItem>
                     </DropdownMenuRadioGroup>
                   </DropdownMenuSubContent>
@@ -361,45 +417,48 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
                     setThemeOpen(false);
                     setLogoutConfirmOpen(true);
                   }}
-                className="flex items-center gap-2 text-destructive data-[highlighted]:bg-destructive/10 focus:text-destructive"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Sair</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+                  className="flex items-center gap-2 text-destructive data-[highlighted]:bg-destructive/10 focus:text-destructive"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Sair</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
             </DropdownMenu>
           </footer>
         </div>
       </aside>
-      {logoutConfirmOpen &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] bg-background/70 backdrop-blur-sm flex items-center justify-center px-4">
-            <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-2xl p-6 space-y-4">
-              <div className="space-y-1">
-                <p className="text-lg font-semibold text-foreground">Sair da conta?</p>
-                <p className="text-sm text-muted-foreground">
-                  Tem certeza que deseja sair? Voce pode voltar a qualquer momento fazendo login.
-                </p>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setLogoutConfirmOpen(false);
-                    setAvatarOpen(false);
-                    setThemeOpen(false);
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button variant="destructive" onClick={handleLogout}>
-                  Confirmar
-                </Button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
+
+      <AlertDialog
+        open={logoutConfirmOpen}
+        onOpenChange={setLogoutConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sair da conta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja sair? Você poderá voltar a qualquer momento
+              fazendo login novamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setLogoutConfirmOpen(false);
+                setAvatarOpen(false);
+                setThemeOpen(false);
+              }}
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sair
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
