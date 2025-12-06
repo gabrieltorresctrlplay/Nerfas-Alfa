@@ -6,13 +6,14 @@ import { Login } from '@/pages/Login';
 import { Dashboard } from '@/pages/Dashboard';
 import { CompleteProfile } from '@/pages/CompleteProfile';
 import { useLocation } from 'react-router-dom';
+import { TweakcnThemeTester } from '@/components/dev/TweakcnThemeTester';
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const { user, loading } = useAuth();
   const { status, checking } = useProfileStatus();
   const location = useLocation();
 
-  if (loading || checking || status === 'unknown') {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -21,7 +22,15 @@ function PrivateRoute({ children }: { children: React.ReactElement }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
+  }
+
+  if (checking || status === 'unknown') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   if (status === 'incomplete' && location.pathname !== '/complete-profile') {
@@ -77,6 +86,7 @@ function App() {
             />
           </Routes>
         </Router>
+        <TweakcnThemeTester />
       </ProfileStatusProvider>
     </AuthProvider>
   );

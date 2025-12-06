@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,18 @@ import { toast } from "sonner";
 
 export function DashboardProfileView() {
   const { user } = useAuth();
+  const defaultAvatarUrl = "https://i.pinimg.com/736x/f7/cd/03/f7cd03608a383f79c6e64c0c4b7d02ae.jpg";
+  const isGooglePlaceholder = (url?: string) => {
+    if (!url) return false;
+    const normalized = url.toLowerCase();
+    if (!normalized.includes("googleusercontent.com")) return false;
+    if (normalized.includes("/a/default")) return true;
+    const hasBasicAPath = normalized.includes("/a/") && !normalized.includes("/a-/");
+    const hasDefaultSize = normalized.includes("=s96-c");
+    const knownLetter = "https://lh3.googleusercontent.com/a/ACg8ocLsOqyqVyXzigFgA-og6EV1xuWjS8q4lXJbDEXl_6X78Xyqwg=s96-c".toLowerCase();
+    if (normalized === knownLetter) return true;
+    return hasBasicAPath && hasDefaultSize;
+  };
 
   // Profile State
   const [displayName, setDisplayName] = useState("");
@@ -23,7 +35,11 @@ export function DashboardProfileView() {
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || "");
-      setPhotoURL(user.photoURL || "");
+      const initialPhoto =
+        user.photoURL && !isGooglePlaceholder(user.photoURL)
+          ? user.photoURL
+          : defaultAvatarUrl;
+      setPhotoURL(initialPhoto);
       setEmail(user.email || "");
       // For phone and dob, you would typically fetch these from Firestore if they were stored there.
       // For now, they remain empty or can be pre-filled with dummy data.
@@ -31,6 +47,11 @@ export function DashboardProfileView() {
       // You should fetch this from Firestore in a real implementation
     }
   }, [user]);
+
+  const previewPhoto = useMemo(() => {
+    if (photoURL && !isGooglePlaceholder(photoURL)) return photoURL;
+    return defaultAvatarUrl;
+  }, [photoURL]);
 
   const handleUpdateProfile = async () => {
     if (!user) return;
@@ -74,10 +95,12 @@ export function DashboardProfileView() {
             <div className="flex flex-col sm:flex-row items-center gap-6">
               <div className="relative group shrink-0">
                 <div className="h-28 w-28 rounded-full bg-secondary overflow-hidden flex items-center justify-center border-2 border-border shadow-md">
-                  {photoURL ? (
-                    <img src={photoURL} alt="Avatar" className="h-full w-full object-cover" />
+                  {previewPhoto ? (
+                    <img src={previewPhoto} alt="Avatar" className="h-full w-full object-cover" />
                   ) : (
-                    <span className="text-4xl font-medium text-secondary-foreground">{displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase()}</span>
+                    <span className="text-4xl font-medium text-secondary-foreground">
+                      {displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase()}
+                    </span>
                   )}
                 </div>
                 {/* Optional: Add an overlay/button to change avatar */}

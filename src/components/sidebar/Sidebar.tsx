@@ -1,5 +1,6 @@
-﻿import type { ComponentType, CSSProperties } from "react";
-import { useRef } from "react";
+import type { ComponentType, CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   LayoutDashboard,
   Settings2,
@@ -9,6 +10,8 @@ import {
   Moon,
   Laptop,
   ChevronDown,
+  Palette,
+  LogOut,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,16 +20,16 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 type SidebarView = "home" | "profile" | "settings";
 
@@ -45,6 +48,36 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const themeTriggerRef = useRef<HTMLDivElement | null>(null);
+  const themeContentRef = useRef<HTMLDivElement | null>(null);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
+  const [themeAlignOffset, setThemeAlignOffset] = useState(0);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setAvatarOpen(false);
+      setThemeOpen(false);
+      setLogoutConfirmOpen(false);
+      await signOut(auth);
+    } catch (error) {
+      console.error("Failed to sign out", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!themeOpen) return;
+    const measure = () => {
+      const triggerRect = themeTriggerRef.current?.getBoundingClientRect();
+      const contentRect = themeContentRef.current?.getBoundingClientRect();
+      if (triggerRect && contentRect) {
+        const offset = triggerRect.bottom - triggerRect.top - (contentRect.bottom - contentRect.top);
+        setThemeAlignOffset(offset);
+      }
+    };
+    requestAnimationFrame(measure);
+  }, [themeOpen]);
 
   const railSize = "calc(3.5rem + 1px)";
   const iconSquare = "h-10 w-10";
@@ -52,244 +85,321 @@ export function Sidebar({ currentView, onNavigate, isCollapsed, onToggle }: Side
   const expandedWidth = "16rem";
   const sidebarWidth = isCollapsed ? railSize : expandedWidth;
 
-  const initials =
-    (user?.displayName || user?.email || "U")
-      .split(" ")
-      .map((part) => part.charAt(0))
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
+  const defaultAvatarUrl = "https://i.pinimg.com/736x/f7/cd/03/f7cd03608a383f79c6e64c0c4b7d02ae.jpg";
+  const isGooglePlaceholder = (url?: string) => {
+    if (!url) return false;
+    const normalized = url.toLowerCase();
+    if (!normalized.includes("googleusercontent.com")) return false;
+    if (normalized.includes("/a/default")) return true;
+    const hasBasicAPath = normalized.includes("/a/") && !normalized.includes("/a-/");
+    const hasDefaultSize = normalized.includes("=s96-c");
+    const knownLetter = "https://lh3.googleusercontent.com/a/ACg8ocLsOqyqVyXzigFgA-og6EV1xuWjS8q4lXJbDEXl_6X78Xyqwg=s96-c".toLowerCase();
+    if (normalized === knownLetter) return true;
+    return hasBasicAPath && hasDefaultSize;
+  };
+  const avatarUrl =
+    user?.photoURL && user.photoURL.trim().length > 0 && !isGooglePlaceholder(user.photoURL)
+      ? user.photoURL
+      : defaultAvatarUrl;
 
   return (
-    <aside
-      style={
-        {
-          "--rail-size": railSize,
-          "--sidebar-width": sidebarWidth,
-        } as CSSProperties
-      }
-      className="fixed inset-y-0 left-0 z-30"
-    >
-      <div
-        className={cn(
-          "relative flex h-full flex-col border-r bg-card/80 backdrop-blur-lg shadow-2xl",
-          "supports-[backdrop-filter]:bg-card/70 transition-[width] duration-300 ease-in-out"
-        )}
+    <>
+      <aside
         style={
           {
-            width: "var(--sidebar-width)",
+            "--rail-size": railSize,
+            "--sidebar-width": sidebarWidth,
           } as CSSProperties
         }
+        className="fixed inset-y-0 left-0 z-30"
       >
-        <header className="relative h-[var(--rail-size)] border-b border-border/60 w-full overflow-hidden">
-          <div
-            className={cn(
-              "flex h-full w-full items-center transition-[padding] duration-300 ease-in-out",
-              isCollapsed ? "justify-center px-0" : "justify-between px-2"
-            )}
-          >
+        <div
+          className={cn(
+            "relative flex h-full flex-col border-r bg-card/80 backdrop-blur-lg shadow-2xl",
+            "supports-[backdrop-filter]:bg-card/70 transition-[width] duration-300 ease-in-out"
+          )}
+          style={
+            {
+              width: "var(--sidebar-width)",
+            } as CSSProperties
+          }
+        >
+          <header className="relative h-[var(--rail-size)] border-b border-border/60 w-full overflow-hidden">
             <div
               className={cn(
-                "flex items-center gap-2 overflow-hidden transition-all duration-300 ease-in-out",
-                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                "flex h-full w-full items-center transition-[padding] duration-300 ease-in-out",
+                isCollapsed ? "justify-center px-0" : "justify-between px-2"
               )}
             >
-              <div className={`grid ${iconSquare} aspect-square place-items-center rounded-xl bg-primary/15 text-primary font-semibold shrink-0`}>
-                NF
-              </div>
               <div
                 className={cn(
-                  "leading-tight transition-[max-width,opacity] duration-300 ease-in-out whitespace-nowrap",
-                  isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[200px] opacity-100"
+                  "flex items-center gap-2 overflow-hidden transition-all duration-300 ease-in-out",
+                  isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
                 )}
               >
-                <p className="text-base font-semibold tracking-tight">Nerfas</p>
-                <p className="text-xs text-muted-foreground">Control Center</p>
-              </div>
-            </div>
-            <Button
-              variant="secondary"
-              onClick={onToggle}
-              aria-label={isCollapsed ? "Expandir sidebar" : "Recolher sidebar"}
-              className={cn(
-                `grid ${iconSquare} aspect-square place-items-center rounded-xl border border-border/60 shadow-sm transition-all duration-300`,
-                "shrink-0",
-                isCollapsed ? "mx-auto" : ""
-              )}
-            >
-              {isCollapsed ? <ChevronsLeft className="h-4 w-4 rotate-180" /> : <ChevronsLeft className="h-4 w-4" />}
-            </Button>
-          </div>
-        </header>
-
-        <nav className={cn("flex-1 py-4 flex flex-col gap-3 w-full px-2")}
-        >
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id;
-
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onNavigate(item.id)}
-                className={cn(
-                  "group/nav relative flex items-center rounded-xl text-sm font-medium transition-all duration-200 overflow-hidden shrink-0",
-                  "h-10 w-full",
-                  isActive
-                    ? "bg-primary/15 text-primary shadow-sm ring-1 ring-primary/20"
-                    : "text-muted-foreground hover:bg-muted/60"
-                )}
-              >
-                <span className={`flex items-center justify-center ${iconSquare} aspect-square text-current shrink-0`}>
-                  <Icon className={iconSize} />
-                </span>
-                <span
+                <div className={`grid ${iconSquare} aspect-square place-items-center rounded-xl bg-primary/15 text-primary font-semibold shrink-0`}>
+                  NF
+                </div>
+                <div
                   className={cn(
-                    "text-left truncate transition-[opacity,max-width,transform] duration-300 ease-in-out ml-1",
-                    isCollapsed
-                      ? "opacity-0 max-w-0 translate-x-[-10px] pointer-events-none"
-                      : "opacity-100 max-w-[200px] translate-x-0"
+                    "leading-tight transition-[max-width,opacity] duration-300 ease-in-out whitespace-nowrap",
+                    isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[200px] opacity-100"
                   )}
                 >
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <footer className="border-t border-border/60 w-full px-2 py-2">
-            <DropdownMenu
-            onOpenChange={(open) => {
-              if (!open) triggerRef.current?.blur();
-            }}
-          >
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                ref={triggerRef}
+                  <p className="text-base font-semibold tracking-tight">Nerfas</p>
+                  <p className="text-xs text-muted-foreground">Control Center</p>
+                </div>
+              </div>
+              <Button
+                variant="secondary"
+                onClick={onToggle}
+                aria-label={isCollapsed ? "Expandir sidebar" : "Recolher sidebar"}
                 className={cn(
-                  "rounded-xl transition-colors duration-200 hover:bg-muted/70 flex items-center overflow-hidden",
-                  "h-10 w-full"
+                  `grid ${iconSquare} aspect-square place-items-center rounded-xl border border-border/60 shadow-sm transition-all duration-300`,
+                  "shrink-0",
+                  isCollapsed ? "mx-auto" : ""
                 )}
               >
-                <div className={`shrink-0 ${iconSquare} flex items-center justify-center`}>
-                  {user?.photoURL ? (
+                {isCollapsed ? <ChevronsLeft className="h-4 w-4 rotate-180" /> : <ChevronsLeft className="h-4 w-4" />}
+              </Button>
+            </div>
+          </header>
+
+          <nav className={cn("flex-1 py-4 flex flex-col gap-3 w-full px-2")}>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onNavigate(item.id)}
+                  className={cn(
+                    "group/nav relative flex items-center rounded-xl text-sm font-medium transition-all duration-200 overflow-hidden shrink-0",
+                    "h-10 w-full",
+                    isActive
+                      ? "bg-primary/15 text-primary shadow-sm ring-1 ring-primary/20"
+                      : "text-muted-foreground hover:bg-muted/60"
+                  )}
+                >
+                  <span className={`flex items-center justify-center ${iconSquare} aspect-square text-current shrink-0`}>
+                    <Icon className={iconSize} />
+                  </span>
+                  <span
+                    className={cn(
+                      "text-left truncate transition-[opacity,max-width,transform] duration-300 ease-in-out ml-1",
+                      isCollapsed
+                        ? "opacity-0 max-w-0 translate-x-[-10px] pointer-events-none"
+                        : "opacity-100 max-w-[200px] translate-x-0"
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <footer className="border-t border-border/60 w-full px-2 py-2">
+            <DropdownMenu
+              open={avatarOpen}
+              onOpenChange={(open) => {
+                setAvatarOpen(open);
+                if (!open) setThemeOpen(false);
+                if (!open) triggerRef.current?.blur();
+              }}
+            >
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  ref={triggerRef}
+                  className={cn(
+                    "rounded-xl transition-colors duration-200 hover:bg-muted/70 flex items-center overflow-hidden",
+                    "h-10 w-full"
+                  )}
+                >
+                  <div className={`shrink-0 ${iconSquare} flex items-center justify-center`}>
                     <img
-                      src={user.photoURL}
-                      alt={user.displayName || "Foto de perfil"}
+                      src={avatarUrl}
+                      alt={user?.displayName || "Foto de perfil"}
                       className="h-[28px] w-[28px] aspect-square rounded-xl object-cover"
                       draggable={false}
                     />
-                  ) : (
-                    <span className={`flex items-center justify-center ${iconSquare} aspect-square rounded-xl bg-gradient-to-br from-primary/80 to-primary text-primary-foreground font-semibold`}>
-                      {initials}
-                    </span>
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    "text-left truncate transition-[opacity,max-width,transform] duration-300 ease-in-out ml-3 flex-1",
-                    isCollapsed
-                      ? "opacity-0 max-w-0 translate-x-[-10px] pointer-events-none"
-                      : "opacity-100 max-w-[220px] translate-x-0"
-                  )}
-                >
-                  <span className="block text-sm font-semibold leading-tight">
-                    {user?.displayName || "Usuario"}
-                  </span>
-                  <span className="block text-xs text-muted-foreground leading-tight">
-                    {user?.email || "Conta ativa"}
-                  </span>
-                </span>
-                {!isCollapsed && (
-                  <ChevronDown
+                  </div>
+                  <span
                     className={cn(
-                      `${iconSize} justify-self-end text-muted-foreground transition-opacity duration-300 shrink-0 mr-1`,
-                      isCollapsed ? "opacity-0 hidden" : "opacity-100 block"
+                      "text-left truncate transition-[opacity,max-width,transform] duration-300 ease-in-out ml-3 flex-1",
+                      isCollapsed
+                        ? "opacity-0 max-w-0 translate-x-[-10px] pointer-events-none"
+                        : "opacity-100 max-w-[220px] translate-x-0"
                     )}
-                  />
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              side="right"
-              sideOffset={14}
-              alignOffset={0}
-              className="w-60 mb-2.5"
-              onCloseAutoFocus={(event) => {
-                // Evita que o foco volte para o trigger ao fechar via clique fora,
-                // mas mantém foco visível em outros cenários (teclado).
-                event.preventDefault();
-                triggerRef.current?.blur();
-              }}
-            >
-              <DropdownMenuLabel className="flex items-center gap-3">
-                {user?.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName || "Foto de perfil"}
-                    className="h-10 w-10 rounded-xl object-cover"
-                    draggable={false}
-                  />
-                ) : (
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary font-semibold">
-                    {initials}
-                  </span>
-                )}
-                <div className="truncate">
-                  <p className="text-sm font-semibold leading-tight">
-                    {user?.displayName || "Usuario"}
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-tight">
-                    {user?.email || "Conta ativa"}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onNavigate("profile")} className="flex items-center gap-2">
-                <UserRound className="h-4 w-4" />
-                <span>My Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onNavigate("settings")} className="flex items-center gap-2">
-                <Settings2 className="h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>Tema</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent
-                  side="right"
-                  sideOffset={5}
-                  alignOffset={0}
-                  className="min-w-[10rem] mb-2.5"
-                  style={{ marginLeft: "5px" }}
-                >
-                  <DropdownMenuRadioGroup
-                    value={theme}
-                    onValueChange={(value) => setTheme(value as "light" | "dark" | "system")}
                   >
-                    <DropdownMenuRadioItem value="light" className="flex items-center gap-2">
-                      <Sun className="h-4 w-4" />
-                      <span>Light</span>
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="dark" className="flex items-center gap-2">
-                      <Moon className="h-4 w-4" />
-                      <span>Dark</span>
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="system" className="flex items-center gap-2">
-                      <Laptop className="h-4 w-4" />
-                      <span>System</span>
-                    </DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
+                    <span className="block text-sm font-semibold leading-tight">
+                      {user?.displayName || "Usuario"}
+                    </span>
+                    <span className="block text-xs text-muted-foreground leading-tight">
+                      {user?.email || "Conta ativa"}
+                    </span>
+                  </span>
+                  {!isCollapsed && (
+                    <ChevronDown
+                      className={cn(
+                        `${iconSize} justify-self-end text-muted-foreground transition-opacity duration-300 shrink-0 mr-1`,
+                        isCollapsed ? "opacity-0 hidden" : "opacity-100 block"
+                      )}
+                    />
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                side="right"
+                sideOffset={14}
+                alignOffset={0}
+                className="w-60 mb-2.5"
+                onCloseAutoFocus={(event) => {
+                  // Evita que o foco volte para o trigger ao fechar via clique fora,
+                  // mas mantem foco visivel em outros cenarios (teclado).
+                  event.preventDefault();
+                  triggerRef.current?.blur();
+                }}
+              >
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    onNavigate("profile");
+                    setAvatarOpen(true);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <UserRound className="h-4 w-4" />
+                  <span>My Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    onNavigate("settings");
+                    setAvatarOpen(true);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSub
+                  open={themeOpen}
+                  onOpenChange={(open) => {
+                    setThemeOpen(open);
+                  }}
+                >
+                  <DropdownMenuSubTrigger ref={themeTriggerRef} className="flex items-center gap-2">
+                    <Palette className="h-4 w-4" />
+                    <span>Tema</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent
+                    side="right"
+                    sideOffset={5}
+                    align="start"
+                    alignOffset={themeAlignOffset}
+                    avoidCollisions={false}
+                    className="min-w-[10rem]"
+                    style={{ marginLeft: "5px" }}
+                    ref={themeContentRef}
+                  >
+                    <DropdownMenuRadioGroup
+                      value={theme}
+                      onValueChange={(value) => {
+                        setTheme(value as "light" | "dark" | "system");
+                        setAvatarOpen(true);
+                        setThemeOpen(true);
+                      }}
+                    >
+                      <DropdownMenuRadioItem
+                        value="light"
+                        className="flex items-center gap-2"
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          setAvatarOpen(true);
+                          setThemeOpen(true);
+                        }}
+                      >
+                        <Sun className="h-4 w-4" />
+                        <span>Light</span>
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem
+                        value="dark"
+                        className="flex items-center gap-2"
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          setAvatarOpen(true);
+                          setThemeOpen(true);
+                        }}
+                      >
+                        <Moon className="h-4 w-4" />
+                        <span>Dark</span>
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem
+                        value="system"
+                        className="flex items-center gap-2"
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          setAvatarOpen(true);
+                          setThemeOpen(true);
+                        }}
+                      >
+                        <Laptop className="h-4 w-4" />
+                        <span>System</span>
+                      </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    setAvatarOpen(false);
+                    setThemeOpen(false);
+                    setLogoutConfirmOpen(true);
+                  }}
+                className="flex items-center gap-2 text-destructive data-[highlighted]:bg-destructive/10 focus:text-destructive"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
-        </footer>
-      </div>
-    </aside>
+            </DropdownMenu>
+          </footer>
+        </div>
+      </aside>
+      {logoutConfirmOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-background/70 backdrop-blur-sm flex items-center justify-center px-4">
+            <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-2xl p-6 space-y-4">
+              <div className="space-y-1">
+                <p className="text-lg font-semibold text-foreground">Sair da conta?</p>
+                <p className="text-sm text-muted-foreground">
+                  Tem certeza que deseja sair? Voce pode voltar a qualquer momento fazendo login.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setLogoutConfirmOpen(false);
+                    setAvatarOpen(false);
+                    setThemeOpen(false);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button variant="destructive" onClick={handleLogout}>
+                  Confirmar
+                </Button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }

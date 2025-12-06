@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "@/contexts/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfileStatus } from "@/contexts/ProfileStatusProvider";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where, limit } from "firebase/firestore";
 
 type ThemeMode = "light" | "dark";
 type ThemeKey = "amberMinimal" | "graphite" | "comicNight";
@@ -196,6 +197,7 @@ const resolveMode = (theme: ThemePreference, prefersDark: boolean): ThemeMode =>
 
 export function TweakcnThemeTester() {
   const { user } = useAuth();
+  const { profile: profileStatusData, status: profileStatus } = useProfileStatus();
   const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isAllowed, setIsAllowed] = useState(false);
@@ -217,40 +219,62 @@ export function TweakcnThemeTester() {
     [theme, systemPrefersDark],
   );
 
+  const verifyReferralCode = useCallback(async () => {
+    if (!user) {
+      setIsAllowed(false);
+      setHasChecked(true);
+      return;
+    }
+
+    // 1) Use profile data already loaded by ProfileStatusProvider when available
+    if (profileStatusData && profileStatus !== "checking" && profileStatus !== "unknown") {
+      const referral = profileStatusData.referralCode;
+      setIsAllowed(referral?.trim().toLowerCase() === "sirob");
+      setHasChecked(true);
+      if (referral?.trim().toLowerCase() === "sirob") return;
+      // If not allowed via profile context, fall through to Firestore fetch for double-check.
+    }
+
+    try {
+      const profileRef = doc(db, "users", user.uid);
+      const snap = await getDoc(profileRef);
+      let referral = snap.exists()
+        ? (snap.data().referralCode as string | undefined)
+        : null;
+
+      // Fallback: legacy/incorrect UID docs, try email match
+      if (!referral && user.email) {
+        const q = query(
+          collection(db, "users"),
+          where("email", "==", user.email),
+          limit(1)
+        );
+        const emailMatch = await getDocs(q);
+        const data = emailMatch.docs[0]?.data() as { referralCode?: string } | undefined;
+        referral = data?.referralCode;
+      }
+
+      setIsAllowed(referral?.trim().toLowerCase() === "sirob");
+      setHasChecked(true);
+    } catch (error) {
+      console.warn("TweakCN tester: failed to verify referral code", error);
+      setIsAllowed(false);
+      setHasChecked(true);
+    }
+  }, [user, profileStatus, profileStatusData]);
+
   useEffect(() => {
-    let cancelled = false;
-
-    const verifyReferralCode = async () => {
-      if (!user) {
-        setIsAllowed(false);
-        setHasChecked(true);
-        return;
-      }
-      try {
-        const profileRef = doc(db, "users", user.uid);
-        const snap = await getDoc(profileRef);
-        const referral = snap.exists()
-          ? (snap.data().referralCode as string | undefined)
-          : null;
-        if (!cancelled) {
-          setIsAllowed(referral?.trim().toLowerCase() === "sirob");
-          setHasChecked(true);
-        }
-      } catch (error) {
-        console.warn("TweakCN tester: failed to verify referral code", error);
-        if (!cancelled) {
-          setIsAllowed(false);
-          setHasChecked(true);
-        }
-      }
-    };
-
     verifyReferralCode();
+  }, [verifyReferralCode]);
 
-    return () => {
-      cancelled = true;
+  useEffect(() => {
+    if (!user) return;
+    const handleFocus = () => {
+      verifyReferralCode();
     };
-  }, [user]);
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [user, verifyReferralCode]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
